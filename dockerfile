@@ -29,7 +29,7 @@ RUN docker-php-ext-install \
     bcmath \
     gd \
     zip \
-    intl \                 # <-- intl sekarang bisa karena libicu-dev sudah ada
+    intl \
     soap \
     xsl
 
