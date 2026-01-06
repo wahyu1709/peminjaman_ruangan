@@ -8,8 +8,20 @@
   ],
   "routes": [
     {
-      "src": "/(enno|sbadmin2|sweetalert2|dist)/(.*)",
-      "dest": "/public/$1/$2"
+      "src": "/enno/(.*)",
+      "dest": "/public/enno/$1"
+    },
+    {
+      "src": "/sbadmin2/(.*)",
+      "dest": "/public/sbadmin2/$1"
+    },
+    {
+      "src": "/sweetalert2/(.*)",
+      "dest": "/public/sweetalert2/$1"
+    },
+    {
+      "src": "/dist/(.*)",
+      "dest": "/public/dist/$1"
     },
     {
       "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|pdf|txt))",
