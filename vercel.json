@@ -8,6 +8,10 @@
   ],
   "routes": [
     {
+      "src": "/css/(.*)",
+      "dest": "/public/css/"
+    },
+    {
       "src": "/enno/(.*)",
       "dest": "/public/enno/$1"
     },
@@ -26,11 +30,7 @@
     {
       "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|pdf|txt))",
       "dest": "/public/$1"
-    },
-    {
-      "src": "/css/(.*)",
-      "dest": "/public/css/"
-    },
+    },   
     {
       "src": "/(.*)",
       "dest": "/api/index.php"
