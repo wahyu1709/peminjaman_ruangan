@@ -8,8 +8,12 @@
   ],
   "routes": [
     {
-      "src": "/enno/asset/vendor/bootstrap/css/(.*)",
-      "dest": "/public/enno/asset/vendor/bootstrap/css/"
+      "src": "/(enno|sbadmin2|sweetalert2|dist)/(.*)",
+      "dest": "/public/$1/$2"
+    },
+    {
+      "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|pdf|txt))",
+      "dest": "/public/$1"
     },
     {
       "src": "/(.*)",
