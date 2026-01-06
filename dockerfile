@@ -1,5 +1,5 @@
 # Gunakan PHP 8.2 CLI sebagai base image
-FROM php:8.2-cli
+FROM php:8.4-cli
 
 # Install ekstensi PHP dan dependensi sistem yang dibutuhkan
 RUN apt-get update && apt-get install -y \
