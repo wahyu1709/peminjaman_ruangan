@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y \
     libwebp-dev \
     unzip \
     zip \
-    libicu-dev \           # <-- INI YANG BENAR untuk intl
+    libicu-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
