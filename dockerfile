@@ -22,7 +22,7 @@ RUN apt-get update && apt-get install -y \
         exif \
         pcntl \
         bcmath \
-        ext-gd \
+        gd \
         zip \
         soap \
         intl \
