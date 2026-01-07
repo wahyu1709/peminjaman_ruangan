@@ -56,7 +56,8 @@ RUN composer install --optimize-autoloader --no-dev --no-interaction --no-script
 RUN php artisan key:generate --ansi || true
 
 # Permission
-RUN chown -R www-data:www-data storage bootstrap/cache && chmod -R 775 storage bootstrap/cache
+RUN chown -R www-data:www-data storage bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache
 
 # Expose port Railway
 EXPOSE $PORT
