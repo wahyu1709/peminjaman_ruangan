@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y \
     libwebp-dev \
     libxpm-dev \
     libxslt1-dev \
+    libicu-dev \
     unzip \
     zip \
     && docker-php-ext-install \
