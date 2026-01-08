@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Exports\AdminExport;
 use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Hash;
+use Maatwebsite\Excel\Facades\Excel;
 
 class AdminController extends Controller
 {
@@ -118,5 +121,21 @@ class AdminController extends Controller
         $user->delete();
 
         return redirect()->route('admin')->with('success', 'Data admin berhasil dihapus');
+    }
+
+    public function excel(){
+        $filename = now()->format('d-m-Y_H-i-s');
+        return Excel::download(new AdminExport, 'DataAdmin_'.$filename.'.xlsx');
+    }
+
+    public function pdf(){
+        $filename = now()->format('d-m-Y_H-i-s');
+        $data = array(
+            'users' => User::where('role', 'admin')
+                 ->latest()->get(),
+        );
+        
+        $pdf = Pdf::loadView('admin/admin/pdf', $data);
+        return $pdf->stream('DataAdmin_'.$filename.'.pdf');
     }
 }

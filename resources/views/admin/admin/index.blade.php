@@ -15,11 +15,11 @@
         </div>
 
         <div>
-            <a href="#" class="btn btn-sm btn-success">
+            <a href="{{ route('adminExcel') }}" class="btn btn-sm btn-success">
                 <i class="fas fa-file-excel mr-2"></i>
                 Excel
             </a>
-            <a href="#" class="btn btn-sm btn-danger">
+            <a href="{{ route('adminPdf') }}" class="btn btn-sm btn-danger" target="__blank">
                 <i class="fas fa-file-pdf mr-2"></i>
                 PDF
             </a>

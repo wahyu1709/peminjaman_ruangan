@@ -53,7 +53,7 @@
                 <li class="nav-item {{ $menuAdminUser ?? '' }}">
                     <a class="nav-link" href="{{ route('user') }}">
                         <i class="fas fa-user"></i>
-                        <span>Manajemen Pengguna</span></a>
+                        <span>Manajemen Mahasiswa</span></a>
                 </li>
 
                 <!-- Nav Item - Tables -->

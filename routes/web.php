@@ -56,6 +56,8 @@ Route::middleware('checkLogin')->group(function(){
         Route::get('/admin/edit/{id}', [AdminController::class, 'edit'])->name('adminEdit');
         Route::match(['PUT', 'PATCH'], '/admin/update/{id}', [AdminController::class, 'update'])->name('adminUpdate');
         Route::delete('/admin/destroy/{id}', [AdminController::class, 'destroy'])->name('adminDestroy');
+        Route::get('/admin/excel', [AdminController::class, 'excel'])->name('adminExcel');
+        Route::get('/admin/pdf', [AdminController::class, 'pdf'])->name('adminPdf');
         
         // Room
         Route::get('/room', [RoomController::class, 'index'])->name('room');

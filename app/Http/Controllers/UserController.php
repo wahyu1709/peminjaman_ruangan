@@ -14,10 +14,9 @@ class UserController extends Controller
 {
     public function index(){
         $data = array(
-            'title' => 'Data User',
+            'title' => 'Data Mahasiswa',
             'menuAdminUser' => 'active',
-            'users' => User::where('jenis_pengguna', 'mahasiswa')
-                 ->latest()->get(),
+            'users' => User::where('jenis_pengguna', 'mahasiswa')->get(),
         );
 
         return view('admin/user/index', $data);

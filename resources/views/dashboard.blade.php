@@ -198,11 +198,14 @@
                     @endphp
 
                     @forelse($bookingsToday as $index => $booking)
-                        
-                        <tr class="{{ now()->between(
-                                \Carbon\Carbon::parse($booking->tanggal_pinjam . ' ' . $booking->waktu_mulai),
-                                \Carbon\Carbon::parse($booking->tanggal_pinjam . ' ' . $booking->waktu_selesai)
-                            ) ? 'table-warning' : '' }}">
+                        @php
+                            $start = \Carbon\Carbon::parse($booking->tanggal_pinjam . ' ' . $booking->waktu_mulai);
+                            $end   = \Carbon\Carbon::parse($booking->tanggal_pinjam . ' ' . $booking->waktu_selesai);
+                            $isOngoing = now()->between($start, $end);
+                            $highlightClass = ($isOngoing && $booking->status !== 'rejected') ? 'table-warning' : '';
+                        @endphp
+
+                        <tr class="{{ $highlightClass }}">
                             <td class="text-center">{{ $index + 1 }}</td>
                             @if(auth()->user()->role == 'admin')
                                 <td>{{ $booking->user->name }}</td>
@@ -233,6 +236,6 @@
             </table>
         </div>
     </div>
-</div>   
+</div> 
 
 @endsection

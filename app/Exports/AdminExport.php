@@ -6,16 +6,18 @@ use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Maatwebsite\Excel\Concerns\FromView;
 
-
-class UserExport implements FromView
+class AdminExport implements FromView
 {
+    /**
+    * @return \Illuminate\Support\Collection
+    */
     public function view(): View
     {
         $data = array(
-            'users' => User::where('jenis_pengguna', 'mahasiswa')
+            'users' => User::where('role', 'admin')
                  ->get()
         );
         
-        return view('admin/user/excel', $data);
+        return view('admin/admin/excel', $data);
     }
 }
