@@ -33,7 +33,7 @@ class DashboardController extends Controller
             $data = array_merge($data, [
                 'totalMahasiswa'    => User::where('jenis_pengguna', 'mahasiswa')->count(),
                 'totalRuangan'      => Room::count(),
-                'bookingsToday'     => Booking::whereDate('tanggal_pinjam', $today)->count(),
+                'bookingsToday'     => Booking::whereDate('tanggal_pinjam', $today)->where('status', 'approved')->count(),
                 'bookingsPending'   => Booking::where('status', 'pending')->count(),
                 'bookingsApproved'  => Booking::where('status', 'approved')->count(),
                 'bookingsRejected'  => Booking::where('status', 'rejected')->count(),

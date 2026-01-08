@@ -9,8 +9,7 @@
   <meta name="keywords" content="">
 
   <!-- Favicons -->
-  <link href="{{ asset('enno/assets/img/favicon.png') }}" rel="icon">
-  <link href="{{ asset('enno/assets/img/apple-touch-icon.png') }}" rel="apple-touch-icon">
+  <link href="{{ asset('enno/assets/img/ui-icon.png') }}" rel="icon">
 
   <!-- Fonts -->
   <link href="https://fonts.googleapis.com" rel="preconnect">
@@ -132,7 +131,7 @@
 
   <footer id="footer" class="footer">
     <div class="container copyright text-center mt-4">
-      <p>© <span>Copyright</span> <strong class="px-1 sitename">eNno</strong> <span>All Rights Reserved</span></p>
+      <p>© <span>Copyright</span> <strong class="px-1 sitename">2026</strong> <span>FIK</span></p>
     </div>
   </footer>
 

@@ -9,9 +9,10 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>SB Admin 2 - Login</title>
+    <title>Pinjam | Login</title>
 
     <!-- Custom fonts for this template-->
+    <link href="{{ asset('enno/assets/img/ui-icon.png') }}" rel="icon">
     <link href="{{ asset('sbadmin2/vendor/fontawesome-free/css/all.min.css') }}" rel="stylesheet" type="text/css">
     <link
         href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i"
@@ -38,7 +39,7 @@
                             <div class="col-12">
                                 <div class="p-5">
                                     <div class="text-center">
-                                        <h1 class="h4 text-gray-900 mb-4">Welcome Back!</h1>
+                                        <h1 class="h4 text-gray-900 mb-4">Selamat Datang</h1>
                                     </div>
 
                                     <form class="user" method="POST" action="{{ route('loginProses') }}">
@@ -47,7 +48,7 @@
                                         <div class="form-group">
                                             <input type="email" class="form-control form-control-user @error('email') is-invalid @enderror"
                                                 id="exampleInputEmail" aria-describedby="emailHelp"
-                                                placeholder="Enter Email Address..." name="email" value="{{ old('email') }}">
+                                                placeholder="Masukkan Email Address..." name="email" value="{{ old('email') }}">
                                             @error('email')
                                                 <small class="text-danger">
                                                     {{ $message }}
@@ -57,7 +58,7 @@
 
                                         <div class="form-group">
                                             <input type="password" class="form-control form-control-user @error('password') is-invalid @enderror"
-                                             placeholder="Password" name="password">
+                                             placeholder="Masukkan Password..." name="password">
                                             @error('password')
                                                 <small class="text-danger">
                                                     {{ $message }}
@@ -72,10 +73,10 @@
 
                                     <hr>
                                     <div class="text-center">
-                                        <a class="small" href="{{ route('passwordRequest') }}">Forgot Password?</a>
+                                        <a class="small" href="{{ route('passwordRequest') }}">Lupa Password?</a>
                                     </div>
                                     <div class="text-center">
-                                        <a class="small" href="{{ route('register') }}">Create an Account!</a>
+                                        <a class="small" href="{{ route('register') }}">Buat Akun!</a>
                                     </div>
                                     <div class="text-center">
                                         <small>

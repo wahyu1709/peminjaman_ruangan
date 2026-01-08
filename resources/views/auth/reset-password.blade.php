@@ -9,9 +9,10 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>SB Admin 2 - Reset Password</title>
+    <title>Pinjam - Reset Password</title>
 
     <!-- Custom fonts for this template-->
+    <link href="{{ asset('enno/assets/img/ui-icon.png') }}" rel="icon">
     <link href="{{ asset('sbadmin2/vendor/fontawesome-free/css/all.min.css') }}" rel="stylesheet" type="text/css">
     <link
         href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i"
@@ -29,18 +30,17 @@
         <!-- Outer Row -->
         <div class="row justify-content-center">
 
-            <div class="col-xl-10 col-lg-12 col-md-9">
+            <div class="col-xl-6 col-lg-7 col-md-9">
 
                 <div class="card o-hidden border-0 shadow-lg my-5">
                     <div class="card-body p-0">
                         <!-- Nested Row within Card Body -->
                         <div class="row">
-                            <div class="col-lg-6 d-none d-lg-block bg-password-image"></div>
-                            <div class="col-lg-6">
+                            <div class="col-12">
                                 <div class="p-5">
                                     <div class="text-center">
-                                        <h1 class="h4 text-gray-900 mb-2">Lupa Password?</h1>
-                                        <p class="mb-4">Masukkan email Anda untuk menerima link reset password.</p>
+                                        <h1 class="h4 text-gray-900 mb-2">Reset Password</h1>
+                                        <p class="mb-4">Masukkan password baru anda</p>
                                     </div>
                                     <form class="user" method="POST" action="{{ route('passwordUpdate') }}">
                                         @csrf
@@ -49,11 +49,11 @@
 
                                         <div class="form-group">
                                             <input type="password" class="form-control form-control-user"
-                                                id="exampleInputPassword" placeholder="Password" name="password">
+                                                id="exampleInputPassword" placeholder="Password..." name="password">
                                         </div>
                                         <div class="form-group">
                                             <input type="password" class="form-control form-control-user" name="password_confirmation"
-                                                id="exampleRepeatPassword" placeholder="Repeat Password">
+                                                id="exampleRepeatPassword" placeholder="Repeat Password...">
                                         </div>
                                         <button type="submit" class="btn btn-primary btn-user btn-block">
                                             Reset Password

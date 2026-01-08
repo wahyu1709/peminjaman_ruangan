@@ -43,7 +43,7 @@
                         <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $totalRuangan }}</div>
                     </div>
                     <div class="col-auto">
-                        <i class="fas fa-users fa-2x text-gray-300"></i>
+                        <i class="fas fa-door-open fa-2x text-gray-300"></i>
                     </div>
                 </div>
             </div>
@@ -59,7 +59,7 @@
                         <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $bookingsToday }}</div>
                     </div>
                     <div class="col-auto">
-                        <i class="fas fa-users fa-2x text-gray-300"></i>
+                        <i class="fas fa-calendar-check fa-2x text-gray-300"></i>
                     </div>
                 </div>
             </div>
@@ -75,7 +75,7 @@
                         <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $bookingsPending }}</div>
                     </div>
                     <div class="col-auto">
-                        <i class="fas fa-users fa-2x text-gray-300"></i>
+                        <i class="fas fa-hourglass-half fa-2x text-gray-300"></i>
                     </div>
                 </div>
             </div>
@@ -91,13 +91,13 @@
                         <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $bookingsRejected }}</div>
                     </div>
                     <div class="col-auto">
-                        <i class="fas fa-users fa-2x text-gray-300"></i>
+                        <i class="fas fa-times-circle fa-2x text-gray-300"></i>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    <div class="col-xl-3 col-md-6 mb-4">
+    {{-- <div class="col-xl-3 col-md-6 mb-4">
         <div class="card border-left-dark shadow h-100 py-2">
             <div class="card-body">
                 <div class="row no-gutters align-items-center">
@@ -107,12 +107,12 @@
                         <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $bookingsActive }}</div>
                     </div>
                     <div class="col-auto">
-                        <i class="fas fa-users fa-2x text-gray-300"></i>
+                        <i class="fas fa-check fa-2x text-gray-300"></i>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
+    </div> --}}
     @else
     {{-- User dashboard card --}}
     <div class="col-xl-3 col-md-6 mb-4">
@@ -125,7 +125,7 @@
                         <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $totalBookingSaya }}</div>
                     </div>
                     <div class="col-auto">
-                        <i class="fas fa-users fa-2x text-gray-300"></i>
+                        <i class="fas fa-calendar-alt fa-2x text-gray-300"></i>
                     </div>
                 </div>
             </div>
@@ -141,7 +141,7 @@
                         <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $pendingSaya }}</div>
                     </div>
                     <div class="col-auto">
-                        <i class="fas fa-users fa-2x text-gray-300"></i>
+                        <i class="fas fa-times-circle fa-2x text-gray-300"></i>
                     </div>
                 </div>
             </div>
@@ -157,7 +157,7 @@
                         <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $activeSaya }}</div>
                     </div>
                     <div class="col-auto">
-                        <i class="fas fa-users fa-2x text-gray-300"></i>
+                        <i class="fas fa-check-circle fa-2x text-gray-300"></i>
                     </div>
                 </div>
             </div>
