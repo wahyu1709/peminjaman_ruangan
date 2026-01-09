@@ -6,13 +6,13 @@ use Carbon\Carbon;
 use App\Models\Room;
 use App\Models\User;
 use App\Models\Booking;
-use Illuminate\Support\Arr;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
 {
     public function index(){
+        Booking::markCompletedBookings();
+
         $user = Auth::user();
         $today = Carbon::today();
         $now = Carbon::now();
@@ -58,8 +58,9 @@ class DashboardController extends Controller
                 'completedSaya'        => $user->bookings()->where('status', 'completed')->count(),
                 'activeSaya'           => $user->bookings()
                     ->where('status', 'approved')
-                    ->where('tanggal_pinjam', '<=', $today)
-                    ->where('waktu_selesai', '>=', $now)
+                    ->whereDate('tanggal_pinjam', $today)
+                    ->whereTime('waktu_mulai', '<=', $now)
+                    ->whereTime('waktu_selesai', '>', $now)
                     ->count(),
                 'bookingsTodayListSaya' => $user->bookings()
                     ->with('room')

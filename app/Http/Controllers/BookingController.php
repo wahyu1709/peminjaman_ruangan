@@ -174,7 +174,7 @@ class BookingController extends Controller
                 case 'pending': return '<span class="badge badge-warning">Pending</span>';
                 case 'approved': return '<span class="badge badge-success">Disetujui</span>';
                 case 'rejected': return '<span class="badge badge-danger">Ditolak</span>';
-                default: return '<span class="badge badge-secondary">-</span>';
+                default: return '<span class="badge badge-secondary">Selesai</span>';
             }
         })
         ->addColumn('action', function ($booking) {

@@ -88,6 +88,7 @@
                         <th>Hari</th>
                         <th>Tanggal</th>
                         <th>Ruangan</th>
+                        <th>Lokasi</th>
                         <th>Jam</th>
                         <th>Keperluan</th>
                     </tr>
@@ -107,6 +108,9 @@
                             @if($booking->room?->kode_ruangan)
                               <br><small class="text-muted">{{ $booking->room->kode_ruangan }}</small>
                             @endif
+                        </td>
+                        <td>
+                          {{ $booking->room->lokasi ?? '-' }}
                         </td>
                         <td>
                             {{ \Carbon\Carbon::parse($booking->waktu_mulai)->format('H:i') }} –

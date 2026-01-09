@@ -10,7 +10,7 @@
         <div class="mb-1 mr-2">
             <a href="{{ route('bookingCreate') }}" class="btn btn-sm btn-primary">
                 <i class="fas fa-plus mr-2"></i>
-                Tambah Data
+                Pinjam Ruangan
             </a>
         </div>
     </div>

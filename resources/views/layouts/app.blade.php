@@ -81,7 +81,7 @@
                                         {{ auth()->user()->role }}
                                     </div>
                                 </a>
-                                <a class="dropdown-item" href="#">
+                                <a class="dropdown-item" href="{{ route('settings') }}">
                                     <i class="fas fa-cog fa-sm fa-fw mr-2 text-gray-400"></i>
                                     Settings
                                 </a>

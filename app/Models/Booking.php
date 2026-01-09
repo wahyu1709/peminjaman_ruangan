@@ -25,8 +25,24 @@ class Booking extends Model
         return match ($this->status) {
             'approved'  => '<span class="badge badge-success">Disetujui</span>',
             'rejected'  => '<span class="badge badge-danger">Ditolak</span>',
-            'completed' => '<span class="badge badge-info">Selesai</span>',
+            'completed' => '<span class="badge badge-secondary">Selesai</span>',
             default     => '<span class="badge badge-warning">Pending</span>',
         };
+    }
+
+    public static function markCompletedBookings(){
+        $now = now();
+        $today = $now->format('Y-m-d');
+        $currentTime = $now->format('H:i');
+
+        self::where('status', 'approved')
+           ->where(function ($query) use ($today, $currentTime){
+            $query->where('tanggal_pinjam', '<', $today)
+                ->orWhere(function ($sub) use ($today, $currentTime){
+                    $sub->where('tanggal_pinjam', $today)
+                        ->where('waktu_selesai', '<=', $currentTime);
+                });
+           })
+           ->update(['status' => 'completed']);
     }
 }

@@ -16,6 +16,7 @@
                     <option value="pending">Pending</option>
                     <option value="approved">Disetujui</option>
                     <option value="rejected">Ditolak</option>
+                    <option value="completed">Selesai</option>
                 </select>
             </div>
 

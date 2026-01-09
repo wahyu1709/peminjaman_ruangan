@@ -167,20 +167,22 @@
           <div class="col-lg-10">
             <h1 class="text-center mb-5">Jadwal Peminjaman Ruangan</h1>
 
+            <!-- Informasi Status -->
+            <div class="text-center mb-5">
+              <h5>Informasi Status</h5>
+              <span class="badge bg-success text-white p-3 me-4 fs-6">Disetujui</span>
+              <span class="badge bg-warning text-dark p-3 me-4 fs-6">Pending</span>
+              <span class="badge bg-danger text-white p-3 me-4 fs-6">Ditolak</span>
+              <span class="badge bg-secondary text-white p-3 fs-6">Selesai</span>
+            </div>
+
             <!-- Kalender FullCalendar -->
             <div class="card shadow-lg border-0">
               <div class="card-body p-4">
                 <div id="calendar"></div>
               </div>
             </div>
-
-            <!-- Legend Status -->
-            <div class="text-center mt-5">
-              <h5>Legenda Status</h5>
-              <span class="badge bg-success text-white p-3 me-4 fs-6">Disetujui</span>
-              <span class="badge bg-warning text-dark p-3 me-4 fs-6">Pending</span>
-              <span class="badge bg-danger text-white p-3 fs-6">Ditolak</span>
-            </div>
+            
           </div>
         </div>
       </div>
@@ -205,6 +207,7 @@
               </div>
               <div class="col-md-6">
                 <p><strong>Waktu:</strong> <span id="modalWaktu" class="fw-bold"></span></p>
+                <p><strong>Lokasi:</strong> <span id="modalLokasi"></span></p>
                 <p><strong>Status:</strong> <span id="modalStatusBadge" class="badge bg-success">Disetujui</span> <span id="modalStatusText" class="ms-2 fw-bold"></span></p>
               </div>
             </div>
@@ -267,8 +270,19 @@
       events: @json($events),
 
       // Batas jam operasional (07:00 - 20:00)
-      slotMinTime: '07:00:00',
-      slotMaxTime: '20:00:00',
+      // slotMinTime: '07:00:00',
+      // slotMaxTime: '20:00:00',
+
+      // TANDAI HARI SABTU & MINGGU DENGAN WARNA MERAH
+      dayCellDidMount: function(arg) {
+        let dayOfWeek = arg.date.getDay(); // 0 = Minggu, 6 = Sabtu
+
+        if (dayOfWeek === 0 || dayOfWeek === 6) {
+          arg.el.style.backgroundColor = '#ffcccc'; // merah muda
+          arg.el.style.color = '#800000';          // teks merah tua
+          arg.el.style.border = '1px solid #ff9999';
+        }
+      },
 
       // Custom tampilan event (mirip gambar kamu: title, jam, keperluan)
       eventContent: function (arg) {
@@ -303,6 +317,9 @@
         } else if (status === 'rejected') {
           bgColor = '#dc3545'; // merah
           textColor = '#ffffff';
+        } else if (status === 'completed') {
+          bgColor = '#6c757d'; // abu-abu
+          textColor = '#ffffff';
         }
 
         // Terapkan warna
@@ -330,6 +347,7 @@
         let waktuMulai = info.event.start.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
         let waktuSelesai = info.event.end.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
         let keperluan = info.event.extendedProps.keperluan || '-';
+        let lokasi = info.event.extendedProps.lokasi || '-';
         let statusRaw = (info.event.extendedProps.status || '').toLowerCase().trim();
         let tanggal = info.event.start.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
@@ -349,6 +367,10 @@
           statusText = 'Ditolak';
           headerClass = 'bg-danger text-white';
           badgeClass = 'bg-danger';
+        } else if (statusRaw === 'completed') {
+          statusText = 'Selesai';
+          headerClass = 'bg-secondary text-white';
+          badgeClass = 'bg-secondary';
         }
 
         // Isi modal
@@ -360,7 +382,7 @@
         document.getElementById('modalPengaju').textContent = pengaju;
         document.getElementById('modalWaktu').textContent = waktuMulai + ' - ' + waktuSelesai;
         document.getElementById('modalKeperluan').textContent = keperluan;
-
+        document.getElementById('modalLokasi').textContent = lokasi;
         document.getElementById('modalHeader').className = 'modal-header ' + headerClass;
         document.getElementById('modalStatusBadge').className = 'badge ' + badgeClass;
         document.getElementById('modalStatusBadge').textContent = statusText;

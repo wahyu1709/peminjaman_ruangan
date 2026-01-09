@@ -8,6 +8,7 @@ use App\Http\Controllers\RoomController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\BookingController;
+use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\DashboardController;
 
 Route::get('/', [HomeController::class, 'index'])->name('welcome');
@@ -37,6 +38,11 @@ Route::get('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::middleware('checkLogin')->group(function(){
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Settings
+    Route::get('/settings', [SettingsController::class, 'index'])->name('settings');
+    Route::post('/settings/profile', [SettingsController::class, 'updateProfile'])->name('settings.profile');
+    Route::post('/settings/password', [SettingsController::class, 'updatePassword'])->name('settings.password');
     
     Route::middleware('isAdmin')->group(function(){
         // User
