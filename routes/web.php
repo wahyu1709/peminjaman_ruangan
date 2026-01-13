@@ -60,7 +60,7 @@ Route::middleware('checkLogin')->group(function(){
         Route::get('/admin/create', [AdminController::class, 'create'])->name('adminCreate');
         Route::post('/admin/store', [AdminController::class, 'store'])->name('adminStore');
         Route::get('/admin/edit/{id}', [AdminController::class, 'edit'])->name('adminEdit');
-        Route::match(['PUT', 'PATCH'], '/admin/update/{id}', [AdminController::class, 'update'])->name('adminUpdate');
+        Route::match(['PUT', 'PATCH'], '/admin/manage/{id}', [AdminController::class, 'manage'])->name('adminUpdate');
         Route::delete('/admin/destroy/{id}', [AdminController::class, 'destroy'])->name('adminDestroy');
         Route::get('/admin/excel', [AdminController::class, 'excel'])->name('adminExcel');
         Route::get('/admin/pdf', [AdminController::class, 'pdf'])->name('adminPdf');

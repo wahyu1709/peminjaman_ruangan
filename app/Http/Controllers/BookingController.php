@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Support\Facades\Log;
 use App\Models\Room;
 use App\Models\Booking;
 use Illuminate\Http\Request;
@@ -90,29 +89,45 @@ class BookingController extends Controller
         return redirect()->route('booking')->with('success', 'Peminjaman ruangan berhasil diajukan');
     }
 
-    public function approve($id)
+    public function approve(Request $request,$id)
     {
         $booking = Booking::findOrFail($id);
-
+        
         // Hanya admin yang boleh approve
         if (Auth::user()->role !== 'admin') {
             abort(403);
         }
 
-        $booking->update(['status' => 'approved']);
+        $booking->update([
+            'status' => 'approved',
+            'admin_comment' => $request->admin_comment ?? null,
+            ]);
 
         return back()->with('success', 'Booking telah disetujui');
     }
 
-    public function reject($id)
+    public function reject(Request $request, $id)
     {
+        $request->validate([
+            'rejected_reason' => 'required|string|max:255'
+        ],[
+            'rejected_reason.required' => 'Alasan penolakan wajib diisi'
+        ]);
+
         $booking = Booking::findOrFail($id);
 
         if (Auth::user()->role !== 'admin') {
             abort(403);
         }
 
-        $booking->update(['status' => 'rejected']);
+        if ($booking->status !== 'pending'){
+            return back()->withErrors(['status' => 'Booking tidak dapat ditolak karena statusnya bukan pending']);
+        }
+
+        $booking->update([
+            'status' => 'rejected',
+            'rejected_reason' => $request->rejected_reason,
+            ]);
 
         return back()->with('success', 'Booking telah ditolak');
     }
