@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\BookingStatusUpdated;
 use App\Models\Room;
 use App\Models\Booking;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 use Yajra\DataTables\Facades\DataTables;
 
 class BookingController extends Controller
@@ -32,7 +34,7 @@ class BookingController extends Controller
 
     public function create(){
         $data = array(
-            'title' => 'Form pinjam Ruangan',
+            'title' => 'Form Pinjam Ruangan',
             'menuBooking' => 'active',
             'rooms' => Room::where('is_active', 1)->get(),
         );
@@ -46,7 +48,8 @@ class BookingController extends Controller
             'tanggal_pinjam' => 'required|date|after_or_equal:today',
             'waktu_mulai' => 'required|date_format:H:i',
             'waktu_selesai' => 'required|date_format:H:i|after:waktu_mulai',
-            'keperluan' => 'required|string'
+            'keperluan' => 'required|string',
+            'role_unit' => 'nullable|string|max:255',
         ],[
             'room_id.required'       => 'Ruangan wajib dipilih',
             'tanggal_pinjam.required'=> 'Tanggal pinjam wajib diisi',
@@ -84,6 +87,7 @@ class BookingController extends Controller
             'waktu_mulai' => $request->waktu_mulai,
             'waktu_selesai' => $request->waktu_selesai,
             'keperluan' => $request->keperluan,
+            'role_unit' => $request->role_unit,
         ]);
 
         return redirect()->route('booking')->with('success', 'Peminjaman ruangan berhasil diajukan');
@@ -102,6 +106,9 @@ class BookingController extends Controller
             'status' => 'approved',
             'admin_comment' => $request->admin_comment ?? null,
             ]);
+        
+        // kirim email notifikasi approve
+        Mail::to($booking->user->email)->send(new BookingStatusUpdated($booking, 'approved', $request->admin_comment ?? null));
 
         return back()->with('success', 'Booking telah disetujui');
     }
@@ -128,6 +135,9 @@ class BookingController extends Controller
             'status' => 'rejected',
             'rejected_reason' => $request->rejected_reason,
             ]);
+
+        // kirim email notifikasi rejected
+        Mail::to($booking->user->email)->send(new BookingStatusUpdated($booking, 'rejected', $request->rejected_reason));
 
         return back()->with('success', 'Booking telah ditolak');
     }

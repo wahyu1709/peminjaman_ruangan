@@ -40,12 +40,26 @@
             <div class="row">
                 <div class="col-xl-6 mb-2">
                     <div class="form-label">
+                        <label for="role_unit">Peran / Unit Kerja <span class="text-muted">(Opsional)</span></label>
+                        <select name="role_unit" id="role_unit" class="form-control">
+                            <option value="" disabled selected>Pilih Peran / Unit Kerja</option>
+                            <option value="Panitia Kegiatan">Panitia Kegiatan</option>
+                            <option value="Koordinator MK">Koordinator MK</option>
+                            <option value="Pengelola PS S1">Pengelola PS S1</option>
+                            <option value="Pengelola PS S2">Pengelola PS S2</option>
+                            <option value="Pengelola PS S3">Pengelola PS S3</option>
+                            <option value="Departemen Kep Dasar">Departemen Kep Dasar</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-xl-3 mb-2">
+                    <div class="form-label">
                         <label>Jam Mulai <span class="text-danger">*</span></label>
                         <input type="time" name="waktu_mulai" class="form-control @error('waktu_mulai') is-invalid @enderror" required>
                         @error('waktu_mulai') <small class="text-danger">{{ $message }}</small> @enderror
                     </div>
                 </div>
-                <div class="col-xl-6">
+                <div class="col-xl-3 mb-2">
                     <div class="form-label">
                         <label>Jam Selesai <span class="text-danger">*</span></label>
                         <input type="time" name="waktu_selesai" class="form-control @error('waktu_selesai') is-invalid @enderror" required>

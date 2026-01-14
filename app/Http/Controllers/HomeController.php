@@ -19,6 +19,7 @@ class HomeController extends Controller
             $namaRuangan = $booking->room?->nama_ruangan ?? 'Tidak diketahui';
             $pengaju = $booking->user?->name ?? 'Anonim';
             $lokasi = $booking->room->lokasi ?? 'Tidak diketahui';
+            $roleUnit = $booking->role_unit ?? '-';
 
             // Gabungkan tanggal + waktu dalam format ISO 8601
             $start = $booking->tanggal_pinjam . 'T' . $booking->waktu_mulai;
@@ -56,6 +57,7 @@ class HomeController extends Controller
                     'pengaju' => $pengaju,
                     'keperluan' => $booking->keperluan ?? '-',
                     'lokasi' => $lokasi,
+                    'role_unit' => $roleUnit,
                     'status' => $booking->status,
                 ]
             ];

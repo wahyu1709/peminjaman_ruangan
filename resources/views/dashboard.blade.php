@@ -187,6 +187,7 @@
                         <th>Ruangan</th>
                         <th>Jam</th>
                         <th>Keperluan</th>
+                        <th>Peran / Unit Kerja</th>
                         <th>Status</th>
                     </tr>
                 </thead>
@@ -221,6 +222,7 @@
                                 </strong>
                             </td>
                             <td>{{ Str::limit($booking->keperluan, 40) }}</td>
+                            <td>{{ $booking->role_unit }}</td>
                             <td class="text-center">{!! $booking->status_badge !!}</td>
                         </tr>
                     @empty

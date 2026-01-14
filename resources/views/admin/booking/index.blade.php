@@ -25,6 +25,7 @@
                         <th>Tanggal</th>
                         <th>Jam</th>
                         <th>Keperluan</th>
+                        <th>Peran / Unit Kerja</th>
                         <th>Status</th>
                         <th>
                             <i class="fas fa-cog"></i>
@@ -43,6 +44,7 @@
                             {{ \Carbon\Carbon::parse($booking->waktu_selesai)->format('H:i') }}
                         </td>
                         <td>{{ $booking->keperluan }}</td>
+                        <td>{{ $booking->role_unit ?? '-' }}</td>
                         <td class="text-center align-middle">
                             {!! $booking->status_badge !!}
 

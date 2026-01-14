@@ -208,6 +208,7 @@
               <div class="col-md-6">
                 <p><strong>Waktu:</strong> <span id="modalWaktu" class="fw-bold"></span></p>
                 <p><strong>Lokasi:</strong> <span id="modalLokasi"></span></p>
+                <p><strong>Unit/Peran:</strong> <span id="modalRole"></span></p>
                 <p><strong>Status:</strong> <span id="modalStatusBadge" class="badge bg-success">Disetujui</span> <span id="modalStatusText" class="ms-2 fw-bold"></span></p>
               </div>
             </div>
@@ -348,6 +349,7 @@
         let waktuSelesai = info.event.end.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
         let keperluan = info.event.extendedProps.keperluan || '-';
         let lokasi = info.event.extendedProps.lokasi || '-';
+        let roleUnit = info.event.extendedProps.role_unit || '-';
         let statusRaw = (info.event.extendedProps.status || '').toLowerCase().trim();
         let tanggal = info.event.start.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
@@ -383,6 +385,7 @@
         document.getElementById('modalWaktu').textContent = waktuMulai + ' - ' + waktuSelesai;
         document.getElementById('modalKeperluan').textContent = keperluan;
         document.getElementById('modalLokasi').textContent = lokasi;
+        document.getElementById('modalRole').textContent = roleUnit;
         document.getElementById('modalHeader').className = 'modal-header ' + headerClass;
         document.getElementById('modalStatusBadge').className = 'badge ' + badgeClass;
         document.getElementById('modalStatusBadge').textContent = statusText;
