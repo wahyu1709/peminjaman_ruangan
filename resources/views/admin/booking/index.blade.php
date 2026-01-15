@@ -107,8 +107,8 @@
                                 </div>
                                 <div class="modal-body">
                                     <p><strong>Pengaju:</strong> {{ $booking->user->name }}</p>
-                                    <p><strong>Ruangan:</strong> {{ $booking->room->nama_ruangan }}</p>
-                                    <p><strong>Tanggal:</strong> {{ \Carbon\Carbon::parse($booking->tanggal_pinjam)->format('d F Y') }}</p>
+                                    <p><strong>Ruangan:</strong> {{ $booking->room->kode_ruangan }} ({{ $booking->room->nama_ruangan }})</p>
+                                    <p><strong>Tanggal:</strong> {{ \Carbon\Carbon::parse($booking->tanggal_pinjam)->isoFormat('D MMMM YYYY') }}</p>
                                     <p><strong>Waktu:</strong> {{ \Carbon\Carbon::parse($booking->waktu_mulai)->format('H:i') }} - {{ \Carbon\Carbon::parse($booking->waktu_selesai)->format('H:i') }}</p>
                                     <hr>
                                     <p class="font-weight-bold text-danger mb-1">Alasan Penolakan:</p>
@@ -137,8 +137,8 @@
                                 </div>
                                 <div class="modal-body">
                                     <p><strong>Pengaju:</strong> {{ $booking->user->name }}</p>
-                                    <p><strong>Ruangan:</strong> {{ $booking->room->nama_ruangan }}</p>
-                                    <p><strong>Tanggal:</strong> {{ \Carbon\Carbon::parse($booking->tanggal_pinjam)->format('d F Y') }}</p>
+                                    <p><strong>Ruangan:</strong> {{ $booking->room->kode_ruangan }} ({{ $booking->room->nama_ruangan }})</p>
+                                    <p><strong>Tanggal:</strong> {{ \Carbon\Carbon::parse($booking->tanggal_pinjam)->isoFormat('D MMMM YYYY') }}</p>
                                     <p><strong>Waktu:</strong> {{ \Carbon\Carbon::parse($booking->waktu_mulai)->format('H:i') }} - {{ \Carbon\Carbon::parse($booking->waktu_selesai)->format('H:i') }}</p>
                                     <hr>
                                     <p class="font-weight-bold text-success mb-1">Komentar Admin:</p>

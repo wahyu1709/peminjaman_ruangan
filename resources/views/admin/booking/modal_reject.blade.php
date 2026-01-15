@@ -32,7 +32,7 @@
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <strong>Tanggal:</strong><br>
-                            {{ \Carbon\Carbon::parse($booking->tanggal_pinjam)->format('d F Y') }}
+                            {{ \Carbon\Carbon::parse($booking->tanggal_pinjam)->isoFormat('D MMMM YYYY') }}
                         </div>
                         <div class="col-md-6">
                             <strong>Waktu:</strong><br>

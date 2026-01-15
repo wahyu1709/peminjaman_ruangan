@@ -172,7 +172,7 @@
         <h6 class="m-0 font-weight-bold">
             <i class="fas fa-calendar-day mr-2"></i>
             Peminjaman Ruangan Hari Ini 
-            <span class="badge badge-light">{{ $today->format('d F Y') }}</span>
+            <span class="badge badge-light">{{ $today->isoFormat('D MMMM YYYY') }}</span>
         </h6>
     </div>
     <div class="card-body">
@@ -181,7 +181,7 @@
                 <thead class="thead-light">
                     <tr>
                         <th>No</th>
-                        @if(auth()->user()->role == 'admin' || auth()->user()->jenis_pengguna == 'staff')
+                        @if(auth()->user()->role == 'admin')
                             <th>Pengaju</th>
                         @endif
                         <th>Ruangan</th>
@@ -227,7 +227,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="{{ auth()->user()->role == 'admin' ? '6' : '5' }}" 
+                            <td colspan="{{ auth()->user()->role == 'admin' ? '7' : '6' }}" 
                                 class="text-center text-muted py-4">
                                 <i class="fas fa-info-circle mr-2"></i>
                                 Tidak ada peminjaman ruangan hari ini.

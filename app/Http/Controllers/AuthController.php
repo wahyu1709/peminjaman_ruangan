@@ -45,7 +45,14 @@ class AuthController extends Controller
     public function registerProses(Request $request){
         $request->validate([
             'name' => 'required',
-            'email' => 'required|email|unique:users,email',
+            'email' => ['required', 'email', 'unique:users,email', function($attribute, $value, $fail){
+                $allowedDomains = ['gmail.com', 'yahoo.com', 'outlook.com', 'mail.com', 'ui.ac.id'];
+                $domain = strtolower(substr(strrchr($value, "@"), 1));
+
+                if(!in_array($domain, $allowedDomains)){
+                    $fail('Email anda tidak valid. Gunakan email dengan domain: ' . implode(', ', $allowedDomains));
+                }
+            }],
             'nim_nip' => 'required|unique:users,nim_nip',
             'jenis_pengguna' => 'required',
             'password' => 'required|min:6|confirmed'

@@ -28,13 +28,13 @@
                         </div>
                         <div class="col-md-6">
                             <strong>Ruangan:</strong><br>
-                            {{ $booking->room->nama_ruangan }}
+                            {{ $booking->room->kode_ruangan }} ({{ $booking->room->nama_ruangan }})
                         </div>
                     </div>
                     <div class="row mt-3">
                         <div class="col-md-6">
                             <strong>Tanggal:</strong><br>
-                            {{ \Carbon\Carbon::parse($booking->tanggal_pinjam)->format('d F Y') }}
+                            {{ \Carbon\Carbon::parse($booking->tanggal_pinjam)->isoFormat('D MMMM YYYY') }}
                         </div>
                         <div class="col-md-6">
                             <strong>Waktu:</strong><br>
