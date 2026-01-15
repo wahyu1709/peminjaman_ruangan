@@ -22,7 +22,7 @@
                         <select name="room_id" class="form-control @error('room_id') is-invalid @enderror" required>
                             <option value="" disabled selected>-- Pilih Ruangan --</option>
                             @foreach($rooms as $room)
-                                <option value="{{ $room->id }}">{{ $room->kode_ruangan }} - {{ $room->nama_ruangan }} ({{ $room->kapasitas }} orang)</option>
+                                <option value="{{ $room->id }}">{{ $room->kode_ruangan }} - {{ $room->nama_ruangan }} ({{ $room->kapasitas }} orang) - {{ $room->lokasi }}</option>
                             @endforeach
                         </select>
                         @error('room_id') <small class="text-danger">{{ $message }}</small> @enderror
@@ -48,8 +48,24 @@
                             <option value="Pengelola PS S1">Pengelola PS S1</option>
                             <option value="Pengelola PS S2">Pengelola PS S2</option>
                             <option value="Pengelola PS S3">Pengelola PS S3</option>
-                            <option value="Departemen Kep Dasar">Departemen Kep Dasar</option>
+                            <option value="Departemen Kep Dasar">Departemen Kep. Dasar</option>
+                            <option value="Departemen Kep Komunitas">Departemen Kep. Komunitas</option>
+                            <option value="Departemen Kep Maternitas">Departemen Kep. Maternitas</option>
+                            <option value="Departemen KMB">Departemen KMB</option>
+                            <option value="Departemen Kep Jiwa">Departemen Kep. Jiwa</option>
+                            <option value="Departemen Kep Anak">Departemen Kep. Anak</option>
+                            <option value="other">Lainnya...</option>
                         </select>
+
+                        <input type="text" 
+                            name="role_unit" 
+                            id="role_unit_other" 
+                            class="form-control" 
+                            placeholder="Masukkan peran / unit kerja Anda..." 
+                            style="display: none;">
+
+                        <!-- Hidden field untuk menyimpan nilai akhir -->
+                        <input type="hidden" name="role_unit" id="role_unit_final">
                     </div>
                 </div>
                 <div class="col-xl-3 mb-2">
@@ -86,4 +102,38 @@
         </form>
     </div>
 </div>
+
+
 @endsection
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const select = document.getElementById('role_unit');
+    const otherInput = document.getElementById('role_unit_other');
+    const finalInput = document.getElementById('role_unit_final');
+
+    // Fungsi update nilai akhir
+    function updateFinalValue() {
+        if (select.value === 'other') {
+            finalInput.value = otherInput.value;
+        } else {
+            finalInput.value = select.value;
+        }
+    }
+
+    // Saat pilih opsi
+    select.addEventListener('change', function () {
+        if (this.value === 'other') {
+            otherInput.style.display = 'block';
+            otherInput.focus();
+        } else {
+            otherInput.style.display = 'none';
+            otherInput.value = '';
+        }
+        updateFinalValue();
+    });
+
+    // Saat ketik di input manual
+    otherInput.addEventListener('input', updateFinalValue);
+});
+</script>

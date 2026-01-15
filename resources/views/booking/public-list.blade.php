@@ -104,9 +104,9 @@
                             {{ \Carbon\Carbon::parse($booking->tanggal_pinjam)->isoFormat('D MMMM Y') }}
                         </td>
                         <td>
-                            <strong>{{ $booking->room->nama_ruangan ?? '-' }}</strong>
-                            @if($booking->room?->kode_ruangan)
-                              <br><small class="text-muted">{{ $booking->room->kode_ruangan }}</small>
+                            <strong>{{ $booking->room->kode_ruangan ?? '-' }}</strong>
+                            @if($booking->room?->nama_ruangan)
+                              <br><small class="text-muted">{{ $booking->room->nama_ruangan }}</small>
                             @endif
                         </td>
                         <td>
