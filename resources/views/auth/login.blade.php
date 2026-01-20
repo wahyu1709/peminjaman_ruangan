@@ -21,6 +21,45 @@
     <!-- Custom styles for this template-->
     <link href="{{ asset('sbadmin2/css/sb-admin-2.min.css') }}" rel="stylesheet">
 
+    <style>
+    /* Input Group styling */
+    .input-group {
+        position: relative;
+    }
+
+    .btn-outline-secondary{
+        border-color: #d1d3e2;
+    }
+
+    /* Button toggle eye */
+    #togglePassword {
+        border-left: none;
+        padding: 0.375rem 0.75rem;
+        background-color: #f8f9fa;
+        border-radius: 0 10rem 10rem 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+    }
+
+    #togglePassword:hover {
+        background-color: #e9ecef;
+        color: #495057;
+    }
+
+    #togglePassword i {
+        font-size: 1.1rem;
+        color: #6c757d;
+    }
+
+    /* Input focus state */
+    .form-control-user:focus {
+        box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+        border-color: #4e73df;
+    }
+    </style>
+
 </head>
 
 <body class="bg-gradient-primary">
@@ -57,12 +96,19 @@
                                         </div>
 
                                         <div class="form-group">
-                                            <input type="password" class="form-control form-control-user @error('password') is-invalid @enderror"
-                                             placeholder="Masukkan Password..." name="password">
+                                            <div class="input-group">
+                                                <input type="password" 
+                                                    id="password" 
+                                                    class="form-control form-control-user @error('password') is-invalid @enderror"
+                                                    placeholder="Masukkan Password..." 
+                                                    name="password" required>
+
+                                                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            </div>
                                             @error('password')
-                                                <small class="text-danger">
-                                                    {{ $message }}
-                                                </small>
+                                                <small class="text-danger">{{ $message }}</small>
                                             @enderror
                                         </div>
 
@@ -106,6 +152,23 @@
     <script src="{{ asset('sbadmin2/js/sb-admin-2.min.js') }}"></script>
 
     <script src="{{ asset('sweetalert2/dist/sweetalert2.all.min.js') }}"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const togglePassword = document.querySelector('#togglePassword');
+            const password = document.querySelector('#password');
+
+            togglePassword.addEventListener('click', function () {
+                // Toggle type attribute
+                const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+                password.setAttribute('type', type);
+
+                // Toggle eye icon
+                this.querySelector('i').classList.toggle('fa-eye');
+                this.querySelector('i').classList.toggle('fa-eye-slash');
+            });
+        });
+    </script>
 
     @session('success')
         <script>
