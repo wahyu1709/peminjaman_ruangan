@@ -17,6 +17,7 @@
                     <option value="approved">Disetujui</option>
                     <option value="rejected">Ditolak</option>
                     <option value="completed">Selesai</option>
+                    <option value="cancelled">Dibatalkan</option>
                 </select>
             </div>
 
@@ -60,7 +61,6 @@
                         <th>Jam</th>
                         <th>Keperluan</th>
                         <th>Status</th>
-                        <th>Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -99,7 +99,6 @@ document.addEventListener('DOMContentLoaded', function () {
             { data: 'time_range', name: 'time_range' },
             { data: 'keperluan', name: 'keperluan' },
             { data: 'status_badge', name: 'status_badge', orderable: false, searchable: false },
-            { data: 'action', name: 'action', orderable: false, searchable: false }
         ],
         pageLength: 10,
         language: {

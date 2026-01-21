@@ -81,8 +81,14 @@
                                     Reject
                                 </button>
                                 @include('admin.booking.modal_reject')
-                            @else
-                                <span class="text-muted">—</span>
+                            @elseif($booking->status == 'approved')
+                                <form action="{{ route('booking.cancel', $booking->id) }}" method="POST" style="display:inline">
+                                    @csrf
+                                    <button type="button" class="btn btn-sm btn-secondary" 
+                                            data-toggle="modal" data-target="#cancelModal{{ $booking->id }}">
+                                        <i class="fas fa-ban"></i> Batalkan
+                                    </button>
+                                </form>
                             @endif
                         </td>
                     </tr>
@@ -146,6 +152,45 @@
                                 </div>
                                 <div class="modal-footer">
                                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                
+                {{-- Modal Cancel --}}
+                @elseif($booking->status == 'approved')
+                    <div class="modal fade" id="cancelModal{{ $booking->id }}" tabindex="-1" role="dialog" aria-labelledby="cancelModalLabel{{ $booking->id }}" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered" role="document">
+                            <div class="modal-content border-0 shadow">
+                                <div class="modal-header bg-danger text-white">
+                                    <h5 class="modal-title" id="cancelModalLabel{{ $booking->id }}">
+                                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                                        Konfirmasi Pembatalan
+                                    </h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body">
+                                    <p><strong>Apakah Anda yakin ingin membatalkan peminjaman ini?</strong></p>
+                                    <p><strong>Pengaju:</strong> {{ $booking->user->name }}</p>
+                                    <p><strong>Ruangan:</strong> {{ $booking->room->kode_ruangan }} ({{ $booking->room->nama_ruangan }})</p>
+                                    <p><strong>Tanggal:</strong> {{ \Carbon\Carbon::parse($booking->tanggal_pinjam)->isoFormat('D MMMM YYYY') }}</p>
+                                    <p><strong>Waktu:</strong> {{ \Carbon\Carbon::parse($booking->waktu_mulai)->format('H:i') }} - {{ \Carbon\Carbon::parse($booking->waktu_selesai)->format('H:i') }}</p>
+                                    <hr>
+                                    <p class="text-danger small mb-0">
+                                        <i class="fas fa-info-circle mr-1"></i>
+                                        Tindakan ini tidak dapat dikembalikan.
+                                    </p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                                    <form action="{{ route('booking.cancel', $booking->id) }}" method="POST" style="display:inline;">
+                                        @csrf
+                                        <button type="submit" class="btn btn-danger">
+                                            <i class="fas fa-check mr-1"></i> Ya, Batalkan
+                                        </button>
+                                    </form>
                                 </div>
                             </div>
                         </div>

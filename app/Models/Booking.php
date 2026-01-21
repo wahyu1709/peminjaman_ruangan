@@ -34,7 +34,8 @@ class Booking extends Model
         return match ($this->status) {
             'approved'  => '<span class="badge badge-success">Disetujui</span>',
             'rejected'  => '<span class="badge badge-danger">Ditolak</span>',
-            'completed' => '<span class="badge badge-secondary">Selesai</span>',
+            'completed' => '<span class="badge badge-info">Selesai</span>',
+            'cancelled' => '<span class="badge badge-secondary">Dibatalkan</span>',
             default     => '<span class="badge badge-warning">Pending</span>',
         };
     }

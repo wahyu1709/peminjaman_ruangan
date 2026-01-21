@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Mail\BookingStatusUpdated;
+// use App\Mail\BookingStatusUpdated;
 use App\Models\Room;
 use App\Models\Booking;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Mail;
+// use Illuminate\Support\Facades\Mail;
 use Yajra\DataTables\Facades\DataTables;
 
 class BookingController extends Controller
@@ -108,7 +108,7 @@ class BookingController extends Controller
             ]);
         
         // kirim email notifikasi approve
-        Mail::to($booking->user->email)->send(new BookingStatusUpdated($booking, 'approved', $request->admin_comment ?? null));
+        // Mail::to($booking->user->email)->send(new BookingStatusUpdated($booking, 'approved', $request->admin_comment ?? null));
 
         return back()->with('success', 'Booking telah disetujui');
     }
@@ -137,7 +137,7 @@ class BookingController extends Controller
             ]);
 
         // kirim email notifikasi rejected
-        Mail::to($booking->user->email)->send(new BookingStatusUpdated($booking, 'rejected', $request->rejected_reason));
+        // Mail::to($booking->user->email)->send(new BookingStatusUpdated($booking, 'rejected', $request->rejected_reason));
 
         return back()->with('success', 'Booking telah ditolak');
     }
@@ -199,7 +199,8 @@ class BookingController extends Controller
                 case 'pending': return '<span class="badge badge-warning">Pending</span>';
                 case 'approved': return '<span class="badge badge-success">Disetujui</span>';
                 case 'rejected': return '<span class="badge badge-danger">Ditolak</span>';
-                default: return '<span class="badge badge-secondary">Selesai</span>';
+                case 'completed': return '<span class="badge badge-info">Selesai</span>';
+                default: return '<span class="badge badge-secondary">Dibatalkan</span>';
             }
         })
         ->addColumn('action', function ($booking) {
@@ -209,5 +210,28 @@ class BookingController extends Controller
         ->addIndexColumn()
         ->rawColumns(['status_badge', 'action'])
         ->make(true);
+    }
+
+    public function cancel($id){
+        $booking = Booking::findOrFail($id);
+
+        // cek akses
+        if(auth()->user()->role === 'admin'){
+            // admin boleh batalkan semua booking
+            $allowed = true;
+        } else{
+            // user hanya boleh batalkan booking miliknya
+            $allowed = ($booking->user_id === auth()->id() && in_array($booking->status, ['pending', 'approved']));
+        }
+
+        if (!$allowed){
+            abort(403, 'Tidak diizinkan membatalkan peminjaman ini.');
+        }
+
+        $booking->update([
+            'status' => 'cancelled',
+        ]);
+
+        return back()->with('success', 'Peminjaman berhasil dibatalkan.');
     }
 }

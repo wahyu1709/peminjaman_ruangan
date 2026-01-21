@@ -203,7 +203,7 @@
                             $start = \Carbon\Carbon::parse($booking->tanggal_pinjam . ' ' . $booking->waktu_mulai);
                             $end   = \Carbon\Carbon::parse($booking->tanggal_pinjam . ' ' . $booking->waktu_selesai);
                             $isOngoing = now()->between($start, $end);
-                            $highlightClass = ($isOngoing && $booking->status !== 'rejected') ? 'table-warning' : '';
+                            $highlightClass = ($isOngoing && $booking->status === 'approved') ? 'table-warning' : '';
                         @endphp
 
                         <tr class="{{ $highlightClass }}">
@@ -222,7 +222,7 @@
                                 </strong>
                             </td>
                             <td>{{ Str::limit($booking->keperluan, 40) }}</td>
-                            <td>{{ $booking->role_unit }}</td>
+                            <td>{{ $booking->role_unit ? $booking->role_unit : '-' }}</td>
                             <td class="text-center">{!! $booking->status_badge !!}</td>
                         </tr>
                     @empty

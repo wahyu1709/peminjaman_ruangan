@@ -87,7 +87,8 @@ Route::middleware('checkLogin')->group(function(){
     Route::patch('/booking/approve/{id}', [BookingController::class, 'approve'])->name('bookingApprove');
     Route::patch('/booking/reject/{id}', [BookingController::class, 'reject'])->name('bookingReject');
     // Opsional: hapus booking (kalau perlu)
-    Route::delete('/booking/{id}', [BookingController::class, 'destroy'])->name('bookingDestroy');
+    Route::post('/booking/cancel/{id}', [BookingController::class, 'cancel'])->name('booking.cancel');
+    // History booking
     Route::get('/booking/history', [BookingController::class, 'history'])->name('booking.history');
     Route::get('/booking/history/data', [BookingController::class, 'historyData'])->name('booking.history.data');
 
