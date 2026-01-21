@@ -144,6 +144,7 @@
         <ul>
           <li><a href="{{ route('welcome') }}" class="active">Jadwal Peminjaman</a></li>
           <li><a href="{{ route('public.list') }}">List Peminjaman</a></li>
+          <li><a href="{{ route('public.ruangan') }}">Daftar Ruangan</a></li>
           <li><a href="https://drive.google.com/file/d/19qr-KEJ_xOXvAi0IvcvpvneEHcgtn0hn/view?usp=drive_link" target="blank">Tutorial Pengguna</a></li>
         </ul>
         <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>

@@ -16,6 +16,9 @@ Route::get('/', [HomeController::class, 'index'])->name('welcome');
 // Halaman publik list peminjaman
 Route::get('/list-peminjaman', [BookingController::class, 'publicList'])->name('public.list');
 
+// Halaman publik daftar ruangan
+Route::get('/ruangan', [HomeController::class, 'ruangan'])->name('public.ruangan');
+
 Route::middleware('isLogin')->group(function(){
     // Login
     Route::get('/login', [AuthController::class, 'login'])->name('login');

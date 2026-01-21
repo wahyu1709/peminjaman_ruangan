@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Booking;
+use App\Models\Room;
 
 class HomeController extends Controller
 {
@@ -64,5 +65,13 @@ class HomeController extends Controller
         });
 
         return view('welcome', compact('events'));
+    }
+
+    public function ruangan(){
+        $rooms = Room::where('is_active', true)
+        ->orderBy('kode_ruangan', 'asc')
+        ->get();
+
+        return view('ruangan', compact('rooms'));
     }
 }
