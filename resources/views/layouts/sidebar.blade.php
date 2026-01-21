@@ -78,6 +78,12 @@
                         <span>Pinjam Ruangan</span></a>
                 </li>
 
+                <li class="nav-item {{ $menuUserRoom ?? '' }}">
+                    <a class="nav-link" href="{{ route('room.user.list') }}">
+                        <i class="fas fa-door-open"></i>
+                        <span>Daftar Ruangan</span></a>
+                </li>
+
                 <!-- Divider -->
                 <hr class="sidebar-divider d-none d-md-block">
 

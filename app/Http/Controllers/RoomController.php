@@ -104,4 +104,18 @@ class RoomController extends Controller
 
         return redirect()->route('room')->with('success', 'Data berhasil dihapus');
     }
+
+    public function userList(){
+        $rooms = Room::where('is_active', true)
+        ->orderBy('kode_ruangan', 'asc')
+        ->get();
+
+        $data = array(
+            'title' => 'Daftar Ruangan',
+            'menuUserRoom' => 'active',
+            'rooms' => $rooms
+        );
+
+        return view('user.room-list', $data);
+    }
 }

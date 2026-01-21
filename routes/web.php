@@ -79,16 +79,18 @@ Route::middleware('checkLogin')->group(function(){
        
     });
 
-     // Booking
-        Route::get('/booking', [BookingController::class, 'index'])->name('booking');
-        Route::get('/booking/create', [BookingController::class, 'create'])->name('bookingCreate');
-        Route::post('/booking/store', [BookingController::class, 'store'])->name('bookingStore');
-        // Untuk admin: approve / reject booking
-        Route::patch('/booking/approve/{id}', [BookingController::class, 'approve'])->name('bookingApprove');
-        Route::patch('/booking/reject/{id}', [BookingController::class, 'reject'])->name('bookingReject');
-        // Opsional: hapus booking (kalau perlu)
-        Route::delete('/booking/{id}', [BookingController::class, 'destroy'])->name('bookingDestroy');
-        Route::get('/booking/history', [BookingController::class, 'history'])->name('booking.history');
-        Route::get('/booking/history/data', [BookingController::class, 'historyData'])->name('booking.history.data');
-});
+    // Booking
+    Route::get('/booking', [BookingController::class, 'index'])->name('booking');
+    Route::get('/booking/create', [BookingController::class, 'create'])->name('bookingCreate');
+    Route::post('/booking/store', [BookingController::class, 'store'])->name('bookingStore');
+    // Untuk admin: approve / reject booking
+    Route::patch('/booking/approve/{id}', [BookingController::class, 'approve'])->name('bookingApprove');
+    Route::patch('/booking/reject/{id}', [BookingController::class, 'reject'])->name('bookingReject');
+    // Opsional: hapus booking (kalau perlu)
+    Route::delete('/booking/{id}', [BookingController::class, 'destroy'])->name('bookingDestroy');
+    Route::get('/booking/history', [BookingController::class, 'history'])->name('booking.history');
+    Route::get('/booking/history/data', [BookingController::class, 'historyData'])->name('booking.history.data');
 
+    // Daftar ruangan untuk user
+    Route::get('/ruangan-user', [RoomController::class, 'userList'])->name('room.user.list');
+});
