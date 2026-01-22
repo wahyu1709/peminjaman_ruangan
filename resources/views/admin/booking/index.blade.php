@@ -89,6 +89,10 @@
                                         <i class="fas fa-ban"></i> Batalkan
                                     </button>
                                 </form>
+                            @elseif ($booking->status == 'completed')
+                                <a href="{{ route('booking.extend', $booking->id) }}" class="btn btn-sm btn-info">
+                                    <i class="fas fa-clock"></i> Perpanjangan
+                                </a>
                             @endif
                         </td>
                     </tr>

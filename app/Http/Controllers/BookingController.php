@@ -234,4 +234,44 @@ class BookingController extends Controller
 
         return back()->with('success', 'Peminjaman berhasil dibatalkan.');
     }
+
+    public function extendForm($id){
+        $original = Booking::where('id', $id)
+                    ->where('status', 'completed')
+                    ->firstOrFail();
+        
+        // cek akses
+        if(auth()->user()->role === 'admin'){
+            // admin boleh perpanjang kapan saja
+            $allowed = true;
+        } else{
+            // user hanya boleh perpanjang booking miliknya & dalam 1 jam setelah selesai
+            $endtime = \Carbon\Carbon::parse($original->tanggal_pinjam . ' ' . $original->waktu_selesai);
+            $deadline = $endtime->copy()->addHour();
+            $allowed = (
+                $original->user_id === auth()->id() &&
+                now()->lte($deadline)
+            );
+        }
+
+        if(!$allowed){
+            return redirect()->back()->withErrors([
+                'error' => 'Anda tidak diizinkan untuk mengajukan perpanjangan untuk peminjaman ini.'
+            ]);
+        }
+        
+        $data = [
+            'room_id' => $original->room_id,
+            'tanggal_pinjam' => $original->tanggal_pinjam,
+            'waktu_mulai' => $original->waktu_mulai,
+            'keperluan' => $original->keperluan,
+            'role_unit' => $original->role_unit,
+        ];
+
+        $rooms = Room::where('is_active', true)->orderBy('kode_ruangan')->get();
+
+        $title = 'Ajukan Perpanjangan Peminjaman';
+
+        return view('admin.booking.create', compact('rooms', 'data', 'title'));
+    }
 }

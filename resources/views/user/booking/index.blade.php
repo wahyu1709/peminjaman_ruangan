@@ -74,6 +74,36 @@
                                     <i class="fas fa-times"></i> Batalkan
                                 </button>
                             </form>
+                            {{-- @elseif ($booking->status == 'completed')
+                                <a href="{{ route('booking.extend', $booking->id) }}" class="btn btn-sm btn-info">
+                                    <i class="fas fa-clock"></i> Perpanjangan
+                                </a> --}}
+                            @endif
+                            @php
+                                $canExtend = false;
+                                $deadlineInfo = '';
+
+                                if ($booking->status === 'completed') {
+                                    if (auth()->user()->role === 'admin') {
+                                        $canExtend = true;
+                                    } else {
+                                        if ($booking->user_id === auth()->id()) {
+                                            $endTime = \Carbon\Carbon::parse($booking->tanggal_pinjam . ' ' . $booking->waktu_selesai);
+                                            $deadline = $endTime->copy()->addHour();
+                                            $canExtend = now()->lte($deadline);
+                                            $deadlineInfo = $deadline->isoFormat('H:mm');
+                                        }
+                                    }
+                                }
+                            @endphp
+
+                            @if($canExtend)
+                                <a href="{{ route('booking.extend', $booking->id) }}" class="btn btn-sm btn-info">
+                                    <i class="fas fa-clock"></i> Perpanjangan
+                                </a>
+                                @if(auth()->user()->role !== 'admin')
+                                    <small class="text-muted d-block mt-1">Batas sampai jam: {{ $deadlineInfo }}</small>
+                                @endif
                             @endif
                         </td>
                     </tr>

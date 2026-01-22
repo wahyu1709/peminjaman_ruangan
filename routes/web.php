@@ -91,6 +91,8 @@ Route::middleware('checkLogin')->group(function(){
     // History booking
     Route::get('/booking/history', [BookingController::class, 'history'])->name('booking.history');
     Route::get('/booking/history/data', [BookingController::class, 'historyData'])->name('booking.history.data');
+    // Perpanjangan booking
+    Route::get('/booking/extend/{id}', [BookingController::class, 'extendForm'])->name('booking.extend');
 
     // Daftar ruangan untuk user
     Route::get('/ruangan-user', [RoomController::class, 'userList'])->name('room.user.list');
