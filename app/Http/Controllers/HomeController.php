@@ -11,6 +11,7 @@ class HomeController extends Controller
     {
         // Ambil SEMUA booking (tanpa filter status), urutkan berdasarkan waktu
         $bookings = Booking::with(['user', 'room'])
+            ->whereIn('status', ['approved', 'pending', 'completed'])
             ->orderBy('tanggal_pinjam', 'asc')
             ->orderBy('waktu_mulai', 'asc')
             ->get();
