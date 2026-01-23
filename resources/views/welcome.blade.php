@@ -322,9 +322,6 @@
         } else if (status === 'completed') {
           bgColor = '#6c757d'; // abu-abu
           textColor = '#ffffff';
-        }else{
-          info.el.style.display = 'none';
-          return;
         }
 
         // Terapkan warna

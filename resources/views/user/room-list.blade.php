@@ -3,7 +3,72 @@
 @section('content')
 <div class="container-fluid">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">Daftar Ruangan Tersedia</h1>
+        <h1 class="h3 mb-0 text-gray-800">{{ $title }}</h1>
+    </div>
+
+    <!-- Card Filter -->
+    <div class="card shadow-lg border-0 mb-5">
+        <div class="card-header bg-primary py-3">
+            <h6 class="m-0 font-weight-bold text-center text-white">
+                <i class="bi bi-filter-right me-2"></i>
+                Cari Ruangan Kosong
+            </h6>
+        </div>
+
+        <div class="card-body">
+            <form method="GET" action="{{ url('/ruangan-user') }}" class="row g-3">
+                <!-- Tanggal -->
+                <div class="col-md-3 col-sm-6">
+                    <label class="form-label fw-bold">Tanggal</label>
+                    <input type="date" name="tanggal" class="form-control" 
+                            value="{{ request('tanggal') }}" required>
+                </div>
+
+                <!-- Jam Mulai -->
+                <div class="col-md-3 col-sm-6">
+                    <label class="form-label fw-bold">Jam Mulai</label>
+                    <input type="time" name="jam_mulai" class="form-control" 
+                            value="{{ request('jam_mulai') }}" required step="1800">
+                </div>
+
+                <!-- Jam Selesai -->
+                <div class="col-md-3 col-sm-6">
+                    <label class="form-label fw-bold">Jam Selesai</label>
+                    <input type="time" name="jam_selesai" class="form-control" 
+                            value="{{ request('jam_selesai') }}" required step="1800">
+                </div>
+
+                <!-- Lokasi -->
+                <div class="col-md-3 col-sm-6">
+                    <label class="form-label fw-bold">Lokasi</label>
+                    <select name="lokasi" class="form-control">
+                        <option value="">Semua Lokasi</option>
+                        @foreach($lokasiList as $lok)
+                        <option value="{{ $lok }}" {{ request('lokasi') == $lok ? 'selected' : '' }}>
+                            {{ $lok }}
+                        </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <!-- Kapasitas Minimal -->
+                {{-- <div class="col-md-3 col-sm-6">
+                <label class="form-label fw-bold">Kapasitas Minimal</label>
+                <input type="number" name="kapasitas_min" class="form-control" 
+                        value="{{ request('kapasitas_min') }}" min="1" placeholder="Contoh: 20">
+                </div> --}}
+
+                <!-- Tombol Cari & Reset -->
+                <div class="col-md-3 col-sm-6 align-items-end gap-2 mt-2">
+                    <button type="submit" class="btn btn-primary flex-fill">
+                        <i class="bi bi-search me-2"></i>Cari Ruangan
+                    </button>
+                    <a href="{{ url('/ruangan-user') }}" class="btn btn-outline-secondary flex-fill">
+                        <i class="bi bi-arrow-repeat me-2"></i>Reset
+                    </a>
+                </div>
+            </form>
+        </div>
     </div>
 
     <div class="row">

@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Booking;
 use App\Models\Room;
+use App\Models\Booking;
+use Illuminate\Http\Request;
 
 class HomeController extends Controller
 {
@@ -11,6 +12,7 @@ class HomeController extends Controller
     {
         // Ambil SEMUA booking (tanpa filter status), urutkan berdasarkan waktu
         $bookings = Booking::with(['user', 'room'])
+            ->whereIn('status', ['approved', 'pending', 'completed'])
             ->orderBy('tanggal_pinjam', 'asc')
             ->orderBy('waktu_mulai', 'asc')
             ->get();
@@ -67,11 +69,45 @@ class HomeController extends Controller
         return view('welcome', compact('events'));
     }
 
-    public function ruangan(){
-        $rooms = Room::where('is_active', true)
-        ->orderBy('kode_ruangan', 'asc')
-        ->get();
+    public function ruangan(Request $request){
+        $query = Room::where('is_active', true);
 
-        return view('ruangan', compact('rooms'));
+        // Filter Tanggal + Jam Mulai + Jam Selesai (untuk cek ruangan kosong)
+        if ($request->filled(['tanggal', 'jam_mulai', 'jam_selesai'])) {
+            $tanggal     = $request->tanggal;
+            $jam_mulai   = $request->jam_mulai;
+            $jam_selesai = $request->jam_selesai;
+
+            $query->whereDoesntHave('bookings', function ($q) use ($tanggal, $jam_mulai, $jam_selesai) {
+                $q->where('tanggal_pinjam', $tanggal)
+                  ->where('status', 'approved') // hanya booking yang sudah disetujui
+                  ->where(function ($q) use ($jam_mulai, $jam_selesai) {
+                      $q->where('waktu_mulai', '<', $jam_selesai)
+                        ->where('waktu_selesai', '>', $jam_mulai);
+                  });
+            });
+        }
+
+        // Filter Lokasi (langsung dari kolom lokasi di tabel rooms)
+        if ($request->filled('lokasi')) {
+            $query->where('lokasi', $request->lokasi);
+        }
+
+        // Filter Kapasitas Minimal
+        // if ($request->filled('kapasitas_min')) {
+        //     $query->where('kapasitas', '>=', $request->kapasitas_min);
+        // }
+
+        // Urutkan berdasarkan kode_ruangan
+        $rooms = $query->orderBy('kode_ruangan', 'asc')->get();
+
+        // Ambil daftar lokasi unik untuk dropdown filter
+        $lokasiList = Room::where('is_active', true)
+                          ->pluck('lokasi')
+                          ->unique()
+                          ->sort()
+                          ->values();
+
+        return view('ruangan', compact('rooms', 'lokasiList'));
     }
 }
