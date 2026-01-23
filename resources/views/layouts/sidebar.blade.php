@@ -19,6 +19,13 @@
                     <span>Dashboard</span></a>
             </li>
 
+            <!-- Nav Item - Dashboard -->
+            <li class="nav-item {{ $menuAdminStatistics ?? '' }}">
+                <a class="nav-link" href="{{ route('statistics') }}">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Statistik Peminjaman</span></a>
+            </li>
+
             <!-- Divider -->
             <hr class="sidebar-divider">
 

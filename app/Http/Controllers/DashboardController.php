@@ -6,7 +6,9 @@ use Carbon\Carbon;
 use App\Models\Room;
 use App\Models\User;
 use App\Models\Booking;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
@@ -70,5 +72,104 @@ class DashboardController extends Controller
             ]);
         }
         return view('dashboard', $data);
+    }
+
+    public function statistics()
+    {
+        // Ambil data peminjaman per bulan untuk tahun ini
+        $bookingsPerMonth = Booking::select(
+            DB::raw('MONTH(tanggal_pinjam) as month'),
+            DB::raw('COUNT(*) as total')
+        )
+        ->whereYear('tanggal_pinjam', Carbon::now()->format('Y'))
+        ->where('status', '!=', 'cancelled')
+        ->groupBy('month')
+        ->orderBy('month')
+        ->pluck('total', 'month');
+
+        // Siapkan data untuk 12 bulan
+        $monthlyData = [];
+        for ($i = 1; $i <= 12; $i++) {
+            $monthlyData[$i] = $bookingsPerMonth->get($i, 0);
+        }
+
+        $data = [
+            'title' => 'Statistik Peminjaman Ruangan',
+            'menuAdminStatistics' => 'active',
+            'monthlyData' => $monthlyData,
+            'currentYear' => Carbon::now()->format('Y')
+        ];
+
+        return view('admin.statistics.index', $data);
+    }
+
+    public function bookingPerMonth(Request $request)
+    {
+        $year = $request->input('year', Carbon::now()->format('Y'));
+
+        $bookingsPerMonth = Booking::select(
+            DB::raw('MONTH(tanggal_pinjam) as month'),
+            DB::raw('COUNT(*) as total')
+        )
+        ->whereYear('tanggal_pinjam', $year)
+        ->where('status', '!=', 'cancelled')
+        ->groupBy('month')
+        ->orderBy('month')
+        ->pluck('total', 'month');
+
+        // Siapkan data untuk 12 bulan
+        $monthlyData = [];
+        for ($i = 1; $i <= 12; $i++) {
+            $monthlyData[$i] = $bookingsPerMonth->get($i, 0);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => array_values($monthlyData),
+            'labels' => ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'],
+            'year' => $year
+        ]);
+    }
+
+    public function bookingPerDay(Request $request)
+    {
+        $days = $request->input('days', 30);
+        $endDate = Carbon::today();
+        $startDate = $endDate->copy()->subDays($days - 1);
+
+        $bookingsPerDay = Booking::select(
+            DB::raw('DATE(tanggal_pinjam) as date'),
+            DB::raw('COUNT(*) as total')
+        )
+        ->whereBetween('tanggal_pinjam', [$startDate, $endDate])
+        ->where('status', '!=', 'cancelled')
+        ->groupBy('date')
+        ->pluck('total', 'date');
+
+        // Siapkan data untuk semua hari
+        $dailyData = [];
+        $labels = [];
+        $colors = [];
+
+        for ($i = $days - 1; $i >= 0; $i--) {
+            $date = $endDate->copy()->subDays($i);
+            $dateStr = $date->format('Y-m-d');
+            $label = $date->format('d M');
+            
+            $dailyData[] = $bookingsPerDay->get($dateStr, 0);
+            $labels[] = $label;
+            
+            // Highlight weekend
+            $dayOfWeek = $date->dayOfWeek; // 0 = Minggu, 6 = Sabtu
+            $colors[] = ($dayOfWeek == 0 || $dayOfWeek == 6) ? '#ff6b6b' : '#4e73df';
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $dailyData,
+            'labels' => $labels,
+            'colors' => $colors,
+            'period' => "$days hari terakhir"
+        ]);
     }
 }

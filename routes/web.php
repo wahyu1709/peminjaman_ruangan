@@ -76,7 +76,14 @@ Route::middleware('checkLogin')->group(function(){
         Route::match(['PUT', 'PATCH'], '/room/update/{id}', [RoomController::class, 'update'])->name('roomUpdate');
         Route::delete('/room/destroy/{id}', [RoomController::class, 'destroy'])->name('roomDestroy');
     
-       
+        // Statistik peminjaman
+        Route::get('/statistics', [DashboardController::class, 'statistics'])->name('statistics');
+        // API Statistik
+        Route::get('/api/statistics/booking-per-month', [DashboardController::class, 'bookingPerMonth'])
+            ->name('api.statistics.booking.per.month');
+        Route::get('/api/statistics/booking-per-day', [DashboardController::class, 'bookingPerDay'])
+            ->name('api.statistics.booking.per.day');
+
     });
 
     // Booking
