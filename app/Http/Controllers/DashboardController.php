@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use App\Models\Room;
 use App\Models\User;
 use App\Models\Booking;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
@@ -241,9 +242,10 @@ class DashboardController extends Controller
             ->groupBy('hour')
             ->pluck('total', 'hour');
 
+        // Inisialisasi jam 7-20 dengan 0
         $hours = [];
-        for ($h = 7; $h <= 20; $h++) { // Jam operasional 07.00-20.00
-            $hours[$h] = $hourlyData->get($h, 0);
+        for ($h = 7; $h <= 20; $h++) {
+            $hours[$h] = $hourlyData->get($h, 0); // default 0 jika tidak ada
         }
 
         // 2. Hari Paling Sibuk (Senin=1, Minggu=7)
@@ -259,12 +261,12 @@ class DashboardController extends Controller
             5 => 'Kamis',
             6 => 'Jumat',
             7 => 'Sabtu',
-            1 => 'Minggu'    // DAYOFWEEK: Minggu=1
+            1 => 'Minggu'     // DAYOFWEEK: Minggu=1
         ];
 
         $weekdayData = [];
         foreach ($days as $num => $name) {
-            $weekdayData[$name] = $dailyData->get($num, 0);
+            $weekdayData[$name] = $dailyData->get($num, 0); // default 0
         }
 
         // 3. Durasi Rata-rata (dalam menit)
@@ -283,5 +285,176 @@ class DashboardController extends Controller
                 Carbon::createFromDate($year, $month, 1)->isoFormat('MMMM YYYY') : 
                 $year
         ]);
+    }
+
+    public function exportFullPdf(Request $request)
+    {
+        $year = $request->input('year', now()->format('Y'));
+        $month = $request->input('month');
+        $days = $request->input('days', 30);
+
+        // Ambil semua data
+        $monthlyData = $this->getMonthlyData($year);
+        $dailyData = $this->getDailyData($days);
+        $topRoomsData = $this->getTopRoomsData($year, $month);
+        $timeAnalysisData = $this->getTimeAnalysisData($year, $month);
+
+        // Tentukan periode untuk judul
+        $period = $month ? 
+            \Carbon\Carbon::createFromDate($year, $month, 1)->isoFormat('MMMM YYYY') : 
+            $year;
+
+        $pdf = Pdf::loadView('admin.statistics.pdf.full', [
+            'monthly_data' => $monthlyData,
+            'daily_data' => $dailyData,
+            'top_rooms_data' => $topRoomsData,
+            'time_analysis_data' => $timeAnalysisData,
+            'period' => $period,
+            'generated_at' => now()->isoFormat('D MMMM YYYY HH:mm')
+        ]);
+
+        return $pdf->download("statistik_lengkap_" . now()->format('Y-m-d') . ".pdf");
+    }
+
+    // Helper methods (dipindah ke dalam controller)
+    private function getMonthlyData($year)
+    {
+        $bookingsPerMonth = Booking::select(
+            DB::raw('MONTH(tanggal_pinjam) as month'),
+            DB::raw('COUNT(*) as total')
+        )
+        ->whereYear('tanggal_pinjam', $year)
+        ->where('status', '!=', 'cancelled')
+        ->groupBy('month')
+        ->orderBy('month')
+        ->get();
+
+        $monthlyData = [];
+        for ($i = 1; $i <= 12; $i++) {
+            $monthlyData[$i] = 0;
+        }
+
+        foreach ($bookingsPerMonth as $booking) {
+            $monthlyData[$booking->month] = $booking->total;
+        }
+
+        return [
+            'labels' => ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'],
+            'data' => array_values($monthlyData),
+            'year' => $year
+        ];
+    }
+
+    private function getDailyData($days)
+    {
+        $endDate = Carbon::now();
+        $startDate = $endDate->copy()->subDays($days - 1);
+
+        $bookingsPerDay = Booking::select(
+            DB::raw('DATE(tanggal_pinjam) as date'),
+            DB::raw('COUNT(*) as total')
+        )
+        ->whereBetween('tanggal_pinjam', [$startDate, $endDate])
+        ->where('status', '!=', 'cancelled')
+        ->groupBy('date')
+        ->pluck('total', 'date');
+
+        $dailyData = [];
+        $labels = [];
+
+        for ($i = $days - 1; $i >= 0; $i--) {
+            $date = $endDate->copy()->subDays($i);
+            $dateStr = $date->format('Y-m-d');
+            $label = $date->format('d M');
+
+            $dailyData[] = $bookingsPerDay->get($dateStr, 0);
+            $labels[] = $label;
+        }
+
+        return [
+            'labels' => $labels,
+            'data' => $dailyData,
+            'period' => "$days hari terakhir"
+        ];
+    }
+
+    private function getTopRoomsData($year, $month = null)
+    {
+        $query = Booking::select('room_id', DB::raw('COUNT(*) as total'))
+            ->where('status', '!=', 'cancelled')
+            ->with('room')
+            ->groupBy('room_id')
+            ->orderByDesc('total')
+            ->limit(10);
+
+        $query->whereYear('tanggal_pinjam', $year);
+        if ($month) {
+            $query->whereMonth('tanggal_pinjam', $month);
+        }
+
+        $topRooms = $query->get();
+
+        $labels = [];
+        $data = [];
+        $is_paid = [];
+
+        foreach ($topRooms as $booking) {
+            $room = $booking->room;
+            if (!$room) continue;
+
+            $labels[] = $room->kode_ruangan . ' - ' . $room->nama_ruangan;
+            $data[] = $booking->total;
+            $is_paid[] = $room->is_paid;
+        }
+
+        return [
+            'labels' => $labels,
+            'data' => $data,
+            'is_paid' => $is_paid
+        ];
+    }
+
+    private function getTimeAnalysisData($year, $month = null)
+    {
+        $query = Booking::where('status', '!=', 'cancelled')
+            ->whereYear('tanggal_pinjam', $year);
+
+        if ($month) {
+            $query->whereMonth('tanggal_pinjam', $month);
+        }
+
+        // Jam paling sering
+        $hourlyData = $query->clone()
+            ->select(DB::raw('HOUR(waktu_mulai) as hour'), DB::raw('COUNT(*) as total'))
+            ->groupBy('hour')
+            ->pluck('total', 'hour');
+
+        $hours = [];
+        for ($h = 7; $h <= 20; $h++) {
+            $hours[$h] = $hourlyData->get($h, 0);
+        }
+
+        // Hari paling sibuk
+        $dailyData = $query->clone()
+            ->select(DB::raw('DAYOFWEEK(tanggal_pinjam) as day'), DB::raw('COUNT(*) as total'))
+            ->groupBy('day')
+            ->pluck('total', 'day');
+
+        $days = [2 => 'Senin', 3 => 'Selasa', 4 => 'Rabu', 5 => 'Kamis', 6 => 'Jumat', 7 => 'Sabtu', 1 => 'Minggu'];
+        $weekdayData = [];
+        foreach ($days as $num => $name) {
+            $weekdayData[$name] = $dailyData->get($num, 0);
+        }
+
+        // Durasi rata-rata
+        $durationData = $query->clone()
+            ->select(DB::raw('AVG(TIMESTAMPDIFF(MINUTE, waktu_mulai, waktu_selesai)) as avg_duration'))
+            ->first();
+
+        return [
+            'hourly' => $hours,
+            'weekday' => $weekdayData,
+            'avg_duration' => round($durationData->avg_duration ?? 0)
+        ];
     }
 }

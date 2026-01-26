@@ -19,12 +19,14 @@
                     <span>Dashboard</span></a>
             </li>
 
+            @if (auth()->user()->role == 'admin')
             <!-- Nav Item - Dashboard -->
             <li class="nav-item {{ $menuAdminStatistics ?? '' }}">
                 <a class="nav-link" href="{{ route('statistics') }}">
                     <i class="fas fa-chart-line"></i>
                     <span>Statistik Peminjaman</span></a>
             </li>
+            @endif
 
             <!-- Divider -->
             <hr class="sidebar-divider">

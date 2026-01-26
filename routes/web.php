@@ -89,6 +89,8 @@ Route::middleware('checkLogin')->group(function(){
         // API Statistik Waktu
         Route::get('/api/statistics/time-analysis', [DashboardController::class, 'timeAnalysis'])
             ->name('api.statistics.time.analysis');
+        // Export PDF Lengkap
+        Route::get('/statistics/export-full', [DashboardController::class, 'exportFullPdf'])->name('statistics.export.full');
     });
 
     // Booking

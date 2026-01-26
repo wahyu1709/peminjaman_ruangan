@@ -4,6 +4,11 @@
 <div class="container-fluid">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">Statistik Peminjaman Ruangan</h1>
+        
+        <!-- Tombol Export Lengkap -->
+        <a href="#" id="exportFullPdf" class="btn btn-danger shadow-sm">
+            <i class="fas fa-file-pdf me-2"></i>Export PDF Lengkap
+        </a>
     </div>
 
     <!-- Section 1: Statistik Peminjaman Ruangan -->
@@ -204,7 +209,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let hourlyChart = null;
     let weekdayChart = null;
 
-    // === MONTHLY CHART ===
+    // === CHART RENDER FUNCTIONS ===
     function renderMonthlyChart(data) {
         const ctx = document.getElementById('monthlyChart').getContext('2d');
         if (monthlyChart) monthlyChart.destroy();
@@ -231,7 +236,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // === DAILY CHART ===
     function renderDailyChart(data) {
         const ctx = document.getElementById('dailyChart').getContext('2d');
         if (dailyChart) dailyChart.destroy();
@@ -263,7 +267,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // === TOP ROOMS CHART ===
     function renderTopRoomsChart(data) {
         const ctx = document.getElementById('topRoomsChart').getContext('2d');
         if (topRoomsChart) topRoomsChart.destroy();
@@ -283,7 +286,7 @@ document.addEventListener('DOMContentLoaded', function () {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                indexAxis: 'y', // Horizontal bar chart
+                indexAxis: 'y',
                 plugins: {
                     legend: { display: false },
                     tooltip: {
@@ -310,80 +313,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // === TOP ROOMS MONTHLY CHART ===
-    function renderTopRoomsChartMonthly(data) {
-        const ctx = document.getElementById('topRoomsChartMonthly').getContext('2d');
-        if (topRoomsChartMonthly) topRoomsChartMonthly.destroy();
-
-        topRoomsChartMonthly = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: data.labels,
-                datasets: [{
-                    label: 'Jumlah Peminjaman',
-                    data: data.data,
-                    backgroundColor: data.colors,
-                    borderColor: data.colors.map(color => color),
-                    borderWidth: 1
-                }]
-            },
-            options: getTopRoomsChartOptions()
-        });
-    }
-
-    // === TOP ROOMS DAILY CHART ===
-    function renderTopRoomsChartDaily(data) {
-        const ctx = document.getElementById('topRoomsChartDaily').getContext('2d');
-        if (topRoomsChartDaily) topRoomsChartDaily.destroy();
-
-        topRoomsChartDaily = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: data.labels,
-                datasets: [{
-                    label: 'Jumlah Peminjaman',
-                    data: data.data,
-                    backgroundColor: data.colors,
-                    borderColor: data.colors.map(color => color),
-                    borderWidth: 1
-                }]
-            },
-            options: getTopRoomsChartOptions()
-        });
-    }
-
-    // === OPTIONS UNTUK TOP ROOMS ===
-    function getTopRoomsChartOptions() {
-        return {
-            responsive: true,
-            maintainAspectRatio: false,
-            indexAxis: 'y',
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    titleFont: { size: 14 },
-                    bodyFont: { size: 13 },
-                    callbacks: {
-                        label: function(context) {
-                            return 'Peminjaman: ' + context.parsed.x;
-                        }
-                    }
-                }
-            },
-            scales: {
-                x: {
-                    beginAtZero: true,
-                    ticks: { stepSize: 1, precision: 0 }
-                },
-                y: {
-                    grid: { display: false }
-                }
-            }
-        };
-    }
-
-    // === HOURLY CHART ===
     function renderHourlyChart(data) {
         const ctx = document.getElementById('hourlyChart').getContext('2d');
         if (hourlyChart) hourlyChart.destroy();
@@ -407,7 +336,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // === WEEKDAY CHART ===
     function renderWeekdayChart(data) {
         const ctx = document.getElementById('weekdayChart').getContext('2d');
         if (weekdayChart) weekdayChart.destroy();
@@ -431,7 +359,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Update fungsi getChartOptions untuk handle x-axis
+    // === SHARED CHART OPTIONS ===
     function getChartOptions() {
         return {
             responsive: true,
@@ -456,14 +384,12 @@ document.addEventListener('DOMContentLoaded', function () {
         };
     }
 
-    // === LOAD DATA ===
+    // === LOAD DATA FUNCTIONS ===
     function loadMonthlyData(year) {
         fetch(`{{ route('api.statistics.booking.per.month') }}?year=${year}`)
             .then(response => response.json())
             .then(data => {
-                if (data.success) {
-                    renderMonthlyChart(data);
-                }
+                if (data.success) renderMonthlyChart(data);
             })
             .catch(error => console.error('Error:', error));
     }
@@ -472,47 +398,32 @@ document.addEventListener('DOMContentLoaded', function () {
         fetch(`{{ route('api.statistics.booking.per.day') }}?days=${days}`)
             .then(response => response.json())
             .then(data => {
-                if (data.success) {
-                    renderDailyChart(data);
-                }
+                if (data.success) renderDailyChart(data);
             })
             .catch(error => console.error('Error:', error));
     }
 
-    // === LOAD TOP ROOMS DATA ===
     function loadTopRoomsData(year, month = null) {
         let url = `{{ route('api.statistics.top.rooms') }}?year=${year}`;
-        if (month) {
-            url += `&month=${month}`;
-        }
+        if (month) url += `&month=${month}`;
         
         fetch(url)
             .then(response => response.json())
             .then(data => {
-                if (data.success) {
-                    renderTopRoomsChart(data);
-                    // Update judul jika diperlukan
-                    console.log('Periode:', data.period);
-                }
+                if (data.success) renderTopRoomsChart(data);
             })
             .catch(error => console.error('Error:', error));
     }
 
-    // === LOAD TIME ANALYSIS DATA ===
     function loadTimeAnalysisData(year, month = null) {
         let url = `{{ route('api.statistics.time.analysis') }}?year=${year}`;
-        if (month) {
-            url += `&month=${month}`;
-        }
+        if (month) url += `&month=${month}`;
         
         fetch(url)
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Update durasi rata-rata
                     document.getElementById('avgDuration').textContent = data.avg_duration;
-                    
-                    // Render grafik
                     renderHourlyChart(data.hourly);
                     renderWeekdayChart(data.weekday);
                 }
@@ -529,7 +440,6 @@ document.addEventListener('DOMContentLoaded', function () {
         loadDailyData(this.value);
     });
 
-    // Event listener untuk top rooms
     document.getElementById('filterYearTopRooms').addEventListener('change', function() {
         const year = this.value;
         const month = document.getElementById('filterMonthTopRooms').value;
@@ -542,7 +452,6 @@ document.addEventListener('DOMContentLoaded', function () {
         loadTopRoomsData(year, month);
     });
 
-    // Event listener untuk statistik waktu
     document.getElementById('filterYearTime').addEventListener('change', function() {
         const year = this.value;
         const month = document.getElementById('filterMonthTime').value;
@@ -553,6 +462,26 @@ document.addEventListener('DOMContentLoaded', function () {
         const year = document.getElementById('filterYearTime').value;
         const month = this.value || null;
         loadTimeAnalysisData(year, month);
+    });
+
+    // === EXPORT PDF FULL ===
+    document.getElementById('exportFullPdf').addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        const year1 = document.getElementById('filterYear').value;
+        const days = document.getElementById('filterDays').value;
+        const year2 = document.getElementById('filterYearTopRooms').value;
+        const month2 = document.getElementById('filterMonthTopRooms').value;
+        const year3 = document.getElementById('filterYearTime').value;
+        const month3 = document.getElementById('filterMonthTime').value;
+        
+        const year = year1;
+        const month = month2 || month3;
+        
+        let url = "{{ route('statistics.export.full') }}?year=" + year + "&days=" + days;
+        if (month) url += "&month=" + month;
+        
+        window.open(url, '_blank');
     });
 
     // Load initial data
