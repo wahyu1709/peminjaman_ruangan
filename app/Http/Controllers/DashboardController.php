@@ -172,4 +172,54 @@ class DashboardController extends Controller
             'period' => "$days hari terakhir"
         ]);
     }
+
+    // Top Ruangan
+    public function topRooms(Request $request)
+    {
+        $year = $request->input('year', Carbon::now()->format('Y'));
+        $month = $request->input('month'); // Opsional
+
+        $query = Booking::select('room_id', DB::raw('COUNT(*) as total'))
+            ->where('status', '!=', 'cancelled')
+            ->with('room')
+            ->groupBy('room_id')
+            ->orderByDesc('total')
+            ->limit(10);
+
+        // Filter berdasarkan tahun
+        $query->whereYear('tanggal_pinjam', $year);
+
+        // Jika bulan dipilih, filter juga berdasarkan bulan
+        if ($month) {
+            $query->whereMonth('tanggal_pinjam', $month);
+        }
+
+        $topRooms = $query->get();
+
+        $labels = [];
+        $data = [];
+        $colors = [];
+
+        foreach ($topRooms as $booking) {
+            $room = $booking->room;
+            if (!$room) continue;
+
+            $labels[] = $room->kode_ruangan . ' - ' . $room->nama_ruangan;
+            $data[] = $booking->total;
+            $colors[] = $room->is_paid ? '#ff6b6b' : '#4e73df';
+        }
+
+        // Tentukan periode untuk judul
+        $period = $month ? 
+            Carbon::createFromDate($year, $month, 1)->isoFormat('MMMM YYYY') : 
+            $year;
+
+        return response()->json([
+            'success' => true,
+            'labels' => $labels,
+            'data' => $data,
+            'colors' => $colors,
+            'period' => $period
+        ]);
+    }
 }

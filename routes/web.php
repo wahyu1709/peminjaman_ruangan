@@ -83,7 +83,9 @@ Route::middleware('checkLogin')->group(function(){
             ->name('api.statistics.booking.per.month');
         Route::get('/api/statistics/booking-per-day', [DashboardController::class, 'bookingPerDay'])
             ->name('api.statistics.booking.per.day');
-
+        // API Statistik Top Ruangan
+        Route::get('/api/statistics/top-rooms', [DashboardController::class, 'topRooms'])
+            ->name('api.statistics.top.rooms');
     });
 
     // Booking
