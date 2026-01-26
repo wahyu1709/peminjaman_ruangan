@@ -86,6 +86,9 @@ Route::middleware('checkLogin')->group(function(){
         // API Statistik Top Ruangan
         Route::get('/api/statistics/top-rooms', [DashboardController::class, 'topRooms'])
             ->name('api.statistics.top.rooms');
+        // API Statistik Waktu
+        Route::get('/api/statistics/time-analysis', [DashboardController::class, 'timeAnalysis'])
+            ->name('api.statistics.time.analysis');
     });
 
     // Booking

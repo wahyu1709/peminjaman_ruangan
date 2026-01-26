@@ -222,4 +222,66 @@ class DashboardController extends Controller
             'period' => $period
         ]);
     }
+
+    public function timeAnalysis(Request $request)
+    {
+        $year = $request->input('year', Carbon::now()->format('Y'));
+        $month = $request->input('month');
+
+        $query = Booking::where('status', '!=', 'cancelled')
+            ->whereYear('tanggal_pinjam', $year);
+
+        if ($month) {
+            $query->whereMonth('tanggal_pinjam', $month);
+        }
+
+        // 1. Jam Paling Sering Dipinjam (per jam)
+        $hourlyData = $query->clone()
+            ->select(DB::raw('HOUR(waktu_mulai) as hour'), DB::raw('COUNT(*) as total'))
+            ->groupBy('hour')
+            ->pluck('total', 'hour');
+
+        $hours = [];
+        for ($h = 7; $h <= 20; $h++) { // Jam operasional 07.00-20.00
+            $hours[$h] = $hourlyData->get($h, 0);
+        }
+
+        // 2. Hari Paling Sibuk (Senin=1, Minggu=7)
+        $dailyData = $query->clone()
+            ->select(DB::raw('DAYOFWEEK(tanggal_pinjam) as day'), DB::raw('COUNT(*) as total'))
+            ->groupBy('day')
+            ->pluck('total', 'day');
+
+        $days = [
+            2 => 'Senin',    // DAYOFWEEK: Senin=2
+            3 => 'Selasa',
+            4 => 'Rabu',
+            5 => 'Kamis',
+            6 => 'Jumat',
+            7 => 'Sabtu',
+            1 => 'Minggu'    // DAYOFWEEK: Minggu=1
+        ];
+
+        $weekdayData = [];
+        foreach ($days as $num => $name) {
+            $weekdayData[$name] = $dailyData->get($num, 0);
+        }
+
+        // 3. Durasi Rata-rata (dalam menit)
+        $durationData = $query->clone()
+            ->select(DB::raw('AVG(TIMESTAMPDIFF(MINUTE, waktu_mulai, waktu_selesai)) as avg_duration'))
+            ->first();
+
+        $avgDuration = round($durationData->avg_duration ?? 0);
+
+        return response()->json([
+            'success' => true,
+            'hourly' => $hours,
+            'weekday' => $weekdayData,
+            'avg_duration' => $avgDuration,
+            'period' => $month ? 
+                Carbon::createFromDate($year, $month, 1)->isoFormat('MMMM YYYY') : 
+                $year
+        ]);
+    }
 }

@@ -124,6 +124,74 @@
             </div>
         </div>
     </div>
+
+    <!-- Section 3: Statistik Waktu -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 bg-warning">
+            <h6 class="m-0 font-weight-bold text-white">
+                <i class="fas fa-clock me-2"></i>
+                Analisis Waktu Penggunaan Ruangan
+            </h6>
+        </div>
+        <div class="card-body">
+            <!-- Filter -->
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">Tahun</label>
+                    <select id="filterYearTime" class="form-control">
+                        @for ($y = now()->year - 5; $y <= now()->year + 2; $y++)
+                            <option value="{{ $y }}" {{ $y == now()->year ? 'selected' : '' }}>
+                                {{ $y }}
+                            </option>
+                        @endfor
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">Bulan (Opsional)</label>
+                    <select id="filterMonthTime" class="form-control">
+                        <option value="">Semua Bulan</option>
+                        <option value="01">Januari</option>
+                        <option value="02">Februari</option>
+                        <option value="03">Maret</option>
+                        <option value="04">April</option>
+                        <option value="05">Mei</option>
+                        <option value="06">Juni</option>
+                        <option value="07">Juli</option>
+                        <option value="08">Agustus</option>
+                        <option value="09">September</option>
+                        <option value="10">Oktober</option>
+                        <option value="11">November</option>
+                        <option value="12">Desember</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Card Durasi Rata-rata -->
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="card bg-info text-white shadow">
+                        <div class="card-body text-center">
+                            <h6 class="card-title">Durasi Rata-rata</h6>
+                            <h3 class="mb-0" id="avgDuration">0</h3>
+                            <small>menit</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grafik Jam -->
+            <h6 class="mb-3">Jam Paling Sering Dipinjam</h6>
+            <div class="chart-container" style="position: relative; height:30vh; width:100%">
+                <canvas id="hourlyChart"></canvas>
+            </div>
+
+            <!-- Grafik Hari -->
+            <h6 class="mb-3 mt-4">Hari Paling Sibuk</h6>
+            <div class="chart-container" style="position: relative; height:30vh; width:100%">
+                <canvas id="weekdayChart"></canvas>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection
 
@@ -133,6 +201,8 @@ document.addEventListener('DOMContentLoaded', function () {
     let monthlyChart = null;
     let dailyChart = null;
     let topRoomsChart = null;
+    let hourlyChart = null;
+    let weekdayChart = null;
 
     // === MONTHLY CHART ===
     function renderMonthlyChart(data) {
@@ -313,7 +383,55 @@ document.addEventListener('DOMContentLoaded', function () {
         };
     }
 
-    // === OPTIONS SHARED ===
+    // === HOURLY CHART ===
+    function renderHourlyChart(data) {
+        const ctx = document.getElementById('hourlyChart').getContext('2d');
+        if (hourlyChart) hourlyChart.destroy();
+
+        const hours = Object.keys(data).map(h => h + ':00');
+        const values = Object.values(data);
+
+        hourlyChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: hours,
+                datasets: [{
+                    label: 'Jumlah Peminjaman',
+                    data: values,
+                    backgroundColor: '#4e73df',
+                    borderColor: '#4e73df',
+                    borderWidth: 1
+                }]
+            },
+            options: getChartOptions()
+        });
+    }
+
+    // === WEEKDAY CHART ===
+    function renderWeekdayChart(data) {
+        const ctx = document.getElementById('weekdayChart').getContext('2d');
+        if (weekdayChart) weekdayChart.destroy();
+
+        const labels = Object.keys(data);
+        const values = Object.values(data);
+
+        weekdayChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Jumlah Peminjaman',
+                    data: values,
+                    backgroundColor: '#36b9cc',
+                    borderColor: '#36b9cc',
+                    borderWidth: 1
+                }]
+            },
+            options: getChartOptions()
+        });
+    }
+
+    // Update fungsi getChartOptions untuk handle x-axis
     function getChartOptions() {
         return {
             responsive: true,
@@ -323,12 +441,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 tooltip: {
                     backgroundColor: 'rgba(0, 0, 0, 0.8)',
                     titleFont: { size: 14 },
-                    bodyFont: { size: 13 },
-                    callbacks: {
-                        label: function(context) {
-                            return 'Peminjaman: ' + context.parsed.y;
-                        }
-                    }
+                    bodyFont: { size: 13 }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { stepSize: 1, precision: 0 }
+                },
+                x: {
+                    grid: { display: false }
                 }
             }
         };
@@ -376,6 +498,28 @@ document.addEventListener('DOMContentLoaded', function () {
             .catch(error => console.error('Error:', error));
     }
 
+    // === LOAD TIME ANALYSIS DATA ===
+    function loadTimeAnalysisData(year, month = null) {
+        let url = `{{ route('api.statistics.time.analysis') }}?year=${year}`;
+        if (month) {
+            url += `&month=${month}`;
+        }
+        
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update durasi rata-rata
+                    document.getElementById('avgDuration').textContent = data.avg_duration;
+                    
+                    // Render grafik
+                    renderHourlyChart(data.hourly);
+                    renderWeekdayChart(data.weekday);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
     // === EVENT LISTENERS ===
     document.getElementById('filterYear').addEventListener('change', function() {
         loadMonthlyData(this.value);
@@ -398,9 +542,24 @@ document.addEventListener('DOMContentLoaded', function () {
         loadTopRoomsData(year, month);
     });
 
+    // Event listener untuk statistik waktu
+    document.getElementById('filterYearTime').addEventListener('change', function() {
+        const year = this.value;
+        const month = document.getElementById('filterMonthTime').value;
+        loadTimeAnalysisData(year, month);
+    });
+
+    document.getElementById('filterMonthTime').addEventListener('change', function() {
+        const year = document.getElementById('filterYearTime').value;
+        const month = this.value || null;
+        loadTimeAnalysisData(year, month);
+    });
+
     // Load initial data
-    loadMonthlyData(new Date().getFullYear());
+    const currentYear = new Date().getFullYear();
+    loadMonthlyData(currentYear);
     loadDailyData(30);
-    loadTopRoomsData(new Date().getFullYear());
+    loadTopRoomsData(currentYear);
+    loadTimeAnalysisData(currentYear);
 });
 </script>
