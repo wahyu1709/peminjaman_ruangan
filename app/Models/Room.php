@@ -15,6 +15,7 @@ class Room extends Model
         'kapasitas',
         'lokasi',
         'is_active',
+        'gambar',
     ];
 
     // Relasi dengan bookings 

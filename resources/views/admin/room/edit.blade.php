@@ -13,7 +13,7 @@
         </a>
     </div>
     <div class="card-body">
-        <form action="{{ route('roomUpdate', $room->id) }}" method="post">
+        <form action="{{ route('roomUpdate', $room->id) }}" method="post" enctype="multipart/form-data">
         @csrf
         @method('put')
         <div class="row">
@@ -71,7 +71,22 @@
         </div>
 
         <div class="row mt-3">
-            <div class="col-xl-12 mb-2">
+            <div class="col-xl-6 mb-2">
+                <label class="form-label">
+                    <span class="text-danger">*</span>
+                    Foto Ruangan :
+                </label>
+                <input type="file" name="gambar" class="form-control @error('gambar') is-invalid @enderror" accept="image/*">
+                @if ($room->gambar)
+                    <div class="mt-2">
+                        <img src="{{ asset('storage/' . $room->gambar) }}" alt="Gambar {{ $room->nama_ruangan }}" style="max-height: 150px; border-radius: 5px;">
+                    </div>
+                @endif
+                @error('gambar')
+                    <small class="text-danger">{{ $message }}</small>
+                @enderror
+            </div>
+            <div class="col-xl-6 mb-2">
                 <label class="form-label">
                     <span class="text-danger">*</span>
                     Ketersediaan :

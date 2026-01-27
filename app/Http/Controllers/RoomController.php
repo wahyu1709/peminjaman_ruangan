@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Storage;
 use App\Models\Room;
 use Illuminate\Http\Request;
 
@@ -32,8 +33,9 @@ class RoomController extends Controller
             'nama_ruangan' => 'required|string|max:255',
             'kode_ruangan' => 'required|string|unique:rooms,kode_ruangan',
             'lokasi' => 'required',
+            'gambar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
             'kapasitas' => 'required|integer|min:1',
-            'is_active' => 'required|boolean'
+            'is_active' => 'required|boolean',
         ],[
             'nama_ruangan.required' => 'Nama Ruangan wajib diisi',
             'kode_ruangan.required' => 'Kode Ruangan wajib diisi',
@@ -43,8 +45,16 @@ class RoomController extends Controller
             'kapasitas.integer' => 'Kapasitas harus berupa angka',
             'kapasitas.min' => 'Kapasitas minimal 1',
             'is_active.required' => 'Ketersediaan wajib diisi',
-            'is_active.boolean' => 'Ketersediaan tidak valid'
+            'is_active.boolean' => 'Ketersediaan tidak valid',
+            'gambar.image' => 'File harus berupa gambar',
+            'gambar.mimes' => 'Format gambar harus: jpeg, png, jpg, gif',
+            'gambar.max' => 'Ukuran gambar maksimal 5MB'
         ]);
+
+        $gambarPath = null;
+        if ($request->hasFile('gambar')) {
+            $gambarPath = $request->file('gambar')->store('ruangan', 'public');
+        }
 
         Room::create([
             'nama_ruangan' => $request->nama_ruangan,
@@ -52,6 +62,7 @@ class RoomController extends Controller
             'lokasi' => $request->lokasi,
             'kapasitas' => $request->kapasitas,
             'is_active' => $request->is_active,
+            'gambar' => $gambarPath,
         ]);
 
         return redirect()->route('room')->with('success', 'Data ruangan berhasil ditambahkan');
@@ -71,8 +82,9 @@ class RoomController extends Controller
             'nama_ruangan' => 'required|string|max:255',
             'kode_ruangan' => 'required|string|unique:rooms,kode_ruangan,' . $id,
             'lokasi' => 'required',
+            'gambar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
             'kapasitas' => 'required|integer|min:1',
-            'is_active' => 'required|boolean'
+            'is_active' => 'required|boolean',
         ],[
             'nama_ruangan.required' => 'Nama Ruangan wajib diisi',
             'kode_ruangan.required' => 'Kode Ruangan wajib diisi',
@@ -82,7 +94,10 @@ class RoomController extends Controller
             'kapasitas.integer' => 'Kapasitas harus berupa angka',
             'kapasitas.min' => 'Kapasitas minimal 1',
             'is_active.required' => 'Ketersediaan wajib diisi',
-            'is_active.boolean' => 'Ketersediaan tidak valid'
+            'is_active.boolean' => 'Ketersediaan tidak valid',
+            'gambar.image' => 'File harus berupa gambar',
+            'gambar.mimes' => 'Format gambar harus: jpeg, png, jpg, gif',
+            'gambar.max' => 'Ukuran gambar maksimal 5MB',
         ]);
 
         $room = Room::findOrFail($id);
@@ -91,6 +106,16 @@ class RoomController extends Controller
         $room->lokasi = $request->lokasi;
         $room->kapasitas = $request->kapasitas;
         $room->is_active = $request->is_active;
+
+        // Update gambar jika ada
+        if ($request->hasFile('gambar')) {
+            // Hapus gambar lama
+            if ($room->gambar) {
+                Storage::disk('public')->delete($room->gambar);
+            }
+            $room->gambar = $request->file('gambar')->store('ruangan', 'public');
+        }
+        
 
         $room->save();
 

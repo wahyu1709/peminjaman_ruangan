@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('nama_ruangan');
             $table->string('kode_ruangan')->unique();
             $table->string('lokasi');
+            $table->string('gambar')->nullable();
             $table->integer('kapasitas');
             $table->boolean('is_active')->default(true);
             $table->timestamps();
