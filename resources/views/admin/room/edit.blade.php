@@ -73,6 +73,39 @@
         <div class="row mt-3">
             <div class="col-xl-6 mb-2">
                 <label class="form-label">
+                    Harga Sewa/Hari :
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text">Rp</span>
+                    <input type="number" name="harga_sewa_per_hari" class="form-control" 
+                        value="{{ old('harga_sewa_per_hari', $room->harga_sewa_per_hari) }}" placeholder="Contoh: 13000000">
+                </div>
+                <small class="text-muted">Biarkan kosong jika ruangan gratis</small>
+                @error('harga_sewa_per_hari')
+                    <small class="text-danger">{{ $message }}</small>
+                @enderror
+            </div>
+            <div class="col-xl-6 mb-2">
+                <label class="form-label">
+                    Denda/Hari :
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text">Rp</span>
+                    <input type="number" name="denda_per_hari" class="form-control" 
+                        value="{{ old('denda_per_hari', $room->denda_per_hari) }}" placeholder="Contoh: 500000">
+                </div>
+                <small class="text-muted">Biarkan kosong jika tidak ada denda</small>
+                @error('denda_per_hari')
+                    <small class="text-danger">
+                        {{ $message }}
+                    </small>
+                @enderror
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-xl-6 mb-2">
+                <label class="form-label">
                     <span class="text-danger">*</span>
                     Foto Ruangan :
                 </label>

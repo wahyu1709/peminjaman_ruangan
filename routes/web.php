@@ -107,6 +107,9 @@ Route::middleware('checkLogin')->group(function(){
     Route::get('/booking/history/data', [BookingController::class, 'historyData'])->name('booking.history.data');
     // Perpanjangan booking
     Route::get('/booking/extend/{id}', [BookingController::class, 'extendForm'])->name('booking.extend');
+    // Upload bukti pembayaran
+    Route::get('/booking/{id}/upload-proof', [BookingController::class, 'showUploadProof'])->name('booking.upload.proof.show');
+    Route::post('/booking/{id}/upload-proof', [BookingController::class, 'uploadProof'])->name('booking.upload.proof');
 
     // Daftar ruangan untuk user
     Route::get('/ruangan-user', [RoomController::class, 'userList'])->name('room.user.list');

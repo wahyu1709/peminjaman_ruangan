@@ -17,6 +17,11 @@ class Booking extends Model
         'status', 
         'rejected_reason', 
         'admin_comment',
+        'total_amount',
+        'invoice_number',
+        'invoice_path',
+        'bukti_pembayaran',  
+        'payment_uploaded_at',
     ];
 
     public function user()

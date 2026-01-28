@@ -28,12 +28,17 @@
                 <div class="col-xl-6 mb-2">
                     <div class="form-label">
                         <label>Ruangan <span class="text-danger">*</span></label>
-                        <select name="room_id" class="form-control @error('room_id') is-invalid @enderror" required>
+                        <select name="room_id" id="room_id" class="form-control @error('room_id') is-invalid @enderror" required>
                             <option value="" disabled selected>-- Pilih Ruangan --</option>
                             @foreach($rooms as $room)
-                                <option value="{{ $room->id }}" 
-                                        {{ (old('room_id', $data['room_id'] ?? null) == $room->id) ? 'selected' : '' }}>
-                                    {{ $room->kode_ruangan }} - {{ $room->nama_ruangan }} ({{ $room->kapasitas }} orang) - {{ $room->lokasi }}
+                                <option value="{{ $room->id }}"
+                                        data-harga="{{ $room->harga_sewa_per_hari ?? '' }}"
+                                        data-denda="{{ $room->denda_per_hari ?? '' }}">
+                                    {{ $room->kode_ruangan }} - {{ $room->nama_ruangan }} 
+                                    @if($room->harga_sewa_per_hari)
+                                        <span class="badge bg-warning text-dark ms-2">Berbayar</span>
+                                    @endif
+                                    ({{ $room->lokasi }})
                                 </option>
                             @endforeach
                         </select>
@@ -110,6 +115,37 @@
             </div>
 
             <div class="row">
+                <div class="col-xl-6">
+                    <div class="form-label">
+                        <label class="form-label fw-bold">Harga Sewa/Hari</label>
+                        <div class="input-group">
+                            <span class="input-group-text">Rp</span>
+                            <input type="text" 
+                                id="harga_display" 
+                                class="form-control" 
+                                readonly 
+                                placeholder="Pilih ruangan berbayar">
+                            <input type="hidden" name="harga_sewa_per_hari" id="harga_sewa_per_hari">
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-6">
+                    <div class="form-label">
+                        <label class="form-label fw-bold">Denda/Hari</label>
+                        <div class="input-group">
+                            <span class="input-group-text">Rp</span>
+                            <input type="text" 
+                                id="denda_display" 
+                                class="form-control" 
+                                readonly 
+                                placeholder="Pilih ruangan berbayar">
+                            <input type="hidden" name="denda_per_hari" id="denda_per_hari">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
                 <div class="col-xl-12">
                     <div class="form-label">
                         <label>Keperluan <span class="text-danger">*</span></label>
@@ -134,11 +170,11 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    // === SCRIPT ROLE UNIT ===
     const select = document.getElementById('role_unit_select');
     const otherInput = document.getElementById('role_unit_other');
     const finalInput = document.getElementById('role_unit_final');
 
-    // Set nilai awal jika ada data
     @if(isset($data['role_unit']))
         const initialRole = "{{ $data['role_unit'] }}";
         const predefinedRoles = [
@@ -159,7 +195,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     @endif
 
-    // Fungsi update nilai akhir
     function updateFinalValue() {
         if (select.value === 'other') {
             finalInput.value = otherInput.value;
@@ -168,7 +203,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // Saat pilih opsi
     select.addEventListener('change', function () {
         if (this.value === 'other') {
             otherInput.style.display = 'block';
@@ -180,10 +214,36 @@ document.addEventListener('DOMContentLoaded', function () {
         updateFinalValue();
     });
 
-    // Saat ketik di input manual
     otherInput.addEventListener('input', updateFinalValue);
-
-    // Inisialisasi nilai pertama kali
     updateFinalValue();
+
+    // === SCRIPT HARGA & DENDA ===
+    const roomSelect = document.getElementById('room_id');
+    const hargaInput = document.getElementById('harga_sewa_per_hari');
+    const dendaInput = document.getElementById('denda_per_hari');
+    const hargaDisplay = document.getElementById('harga_display');
+    const dendaDisplay = document.getElementById('denda_display');
+
+    if (roomSelect && hargaInput && dendaInput) {
+        roomSelect.addEventListener('change', function () {
+            const selectedOption = this.options[this.selectedIndex];
+            const harga = selectedOption.getAttribute('data-harga') || '';
+            const denda = selectedOption.getAttribute('data-denda') || '';
+
+            hargaInput.value = harga;
+            dendaInput.value = denda;
+            hargaDisplay.value = harga ? parseInt(harga).toLocaleString('id-ID') : '';
+            dendaDisplay.value = denda ? parseInt(denda).toLocaleString('id-ID') : '';
+        });
+
+        @if(isset($data['room_id']))
+            const initialRoomId = "{{ $data['room_id'] }}";
+            const initialOption = roomSelect.querySelector(`option[value="${initialRoomId}"]`);
+            if (initialOption) {
+                roomSelect.value = initialRoomId;
+                roomSelect.dispatchEvent(new Event('change'));
+            }
+        @endif
+    }
 });
 </script>

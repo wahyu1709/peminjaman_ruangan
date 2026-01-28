@@ -70,6 +70,11 @@ class DashboardController extends Controller
                     ->whereDate('tanggal_pinjam', $today)
                     ->orderBy('waktu_mulai', 'asc')
                     ->get(),
+                'pendingPaidBookings' => $user->bookings()
+                    ->where('total_amount', '>', 0)
+                    ->where('status', 'pending')
+                    ->whereNull('bukti_pembayaran')
+                    ->count(),
             ]);
         }
         return view('dashboard', $data);

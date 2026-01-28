@@ -25,6 +25,7 @@
                         <th>Tanggal</th>
                         <th>Jam</th>
                         <th>Keperluan</th>
+                        <th>Invoice</th>
                         <th>Status</th>
                         <th>
                             <i class="fas fa-cog"></i>
@@ -43,6 +44,27 @@
                             {{ \Carbon\Carbon::parse($booking->waktu_selesai)->format('H:i') }}
                         </td>
                         <td>{{ $booking->keperluan }}</td>
+                        <!-- Kolom INVOICE -->
+                        <td class="text-center align-middle">
+                            @if($booking->total_amount > 0)
+                                <!-- Booking Berbayar -->
+                                @if($booking->invoice_path)
+                                    <a href="{{ Storage::url($booking->invoice_path) }}" 
+                                    target="_blank" 
+                                    class="btn btn-info btn-sm"
+                                    title="Download Invoice">
+                                        <i class="fas fa-file-invoice"></i> Invoice
+                                    </a>
+                                    <br>
+                                    <small class="text-muted mt-1">Rp {{ number_format($booking->total_amount, 0, ',', '.') }}</small>
+                                @else
+                                    <span class="badge badge-warning">Menunggu</span>
+                                @endif
+                            @else
+                                <!-- Booking Gratis -->
+                                <span class="text-muted">Gratis</span>
+                            @endif
+                        </td>
                         <td class="text-center align-middle">
                             {!! $booking->status_badge !!}
 

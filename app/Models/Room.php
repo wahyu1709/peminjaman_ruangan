@@ -16,6 +16,8 @@ class Room extends Model
         'lokasi',
         'is_active',
         'gambar',
+        'harga_sewa_per_hari',
+        'denda_per_hari',
     ];
 
     // Relasi dengan bookings 

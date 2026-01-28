@@ -25,7 +25,7 @@
                     <ul class="navbar-nav ml-auto">
 
                         <!-- Nav Item - Alerts -->
-                        @if(auth()->check() && (auth()->user()->role == 'admin' || auth()->user()->jenis_pengguna == 'staff'))
+                        @if(auth()->check() && (auth()->user()->role == 'admin'))
                             @php
                                 $pendingOver1Hour = \App\Models\Booking::where('status', 'pending')
                                     ->where('created_at', '<', \Carbon\Carbon::now()->subHour())

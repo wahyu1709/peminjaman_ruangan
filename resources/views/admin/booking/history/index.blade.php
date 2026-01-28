@@ -14,6 +14,7 @@
                 <select id="filter_status" class="custom-select custom-select-sm">
                     <option value="">Semua Status</option>
                     <option value="pending">Pending</option>
+                    <option value="payment_uploaded">Menunggu Verifikasi</option>
                     <option value="approved">Disetujui</option>
                     <option value="rejected">Ditolak</option>
                     <option value="completed">Selesai</option>
@@ -104,6 +105,21 @@ document.addEventListener('DOMContentLoaded', function () {
         language: {
             url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json'
         }
+    });
+
+    // Filter tabel berdasarkan status
+    document.getElementById('filterStatus').addEventListener('change', function() {
+        const status = this.value;
+        const rows = document.querySelectorAll('#bookingTable tbody tr');
+        
+        rows.forEach(row => {
+            const statusCell = row.querySelector('td:last-child');
+            if (!status || statusCell.textContent.trim().includes(status)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
     });
 
     // Pastikan event listener dipasang setelah DataTable siap

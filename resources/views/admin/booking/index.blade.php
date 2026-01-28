@@ -26,6 +26,7 @@
                         <th>Jam</th>
                         <th>Keperluan</th>
                         <th>Peran / Unit Kerja</th>
+                        <th>Pembayaran</th>
                         <th>Status</th>
                         <th>
                             <i class="fas fa-cog"></i>
@@ -45,9 +46,81 @@
                         </td>
                         <td>{{ $booking->keperluan }}</td>
                         <td>{{ $booking->role_unit ?? '-' }}</td>
+                        
+                        <!-- Kolom PEMBAYARAN (kolom ke-8) -->
                         <td class="text-center align-middle">
-                            {!! $booking->status_badge !!}
+                            @if($booking->total_amount > 0)
+                                <!-- Ruangan Berbayar -->
+                                <div class="mb-2">
+                                    <small class="text-muted">Total: Rp {{ number_format($booking->total_amount, 0, ',', '.') }}</small>
+                                </div>
+                                
+                                @if($booking->invoice_path)
+                                    <a href="{{ Storage::url($booking->invoice_path) }}" target="_blank" class="btn btn-info btn-sm mb-2">
+                                        <i class="fas fa-file-invoice me-1"></i> Invoice
+                                    </a>
+                                @endif
+                                
+                                @if($booking->bukti_pembayaran)
+                                    @if(pathinfo($booking->bukti_pembayaran, PATHINFO_EXTENSION) == 'pdf')
+                                        <a href="{{ Storage::url($booking->bukti_pembayaran) }}" target="_blank" class="btn btn-success btn-sm">
+                                            <i class="fas fa-file-pdf me-1"></i> Bukti
+                                        </a>
+                                    @else
+                                        <!-- Untuk gambar, tampilkan thumbnail -->
+                                        <button type="button" class="btn btn-success btn-sm" data-toggle="modal" data-target="#proofModal{{ $booking->id }}">
+                                            <i class="fas fa-image me-1"></i> Bukti
+                                        </button>
+                                        
+                                        <!-- Modal untuk gambar besar -->
+                                        <div class="modal fade" id="proofModal{{ $booking->id }}" tabindex="-1">
+                                            <div class="modal-dialog modal-lg">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">Bukti Pembayaran - {{ $booking->user->name }}</h5>
+                                                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                                    </div>
+                                                    <div class="modal-body text-center">
+                                                        <img src="{{ Storage::url($booking->bukti_pembayaran) }}" 
+                                                            alt="Bukti Pembayaran" 
+                                                            class="img-fluid">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endif
+                                @else
+                                    <span class="badge badge-danger">Belum Upload</span>
+                                @endif
+                            @else
+                                <!-- Ruangan Gratis -->
+                                <span class="text-muted">Gratis</span>
+                            @endif
+                        </td>
+                        
+                        <!-- Kolom STATUS (kolom ke-9) -->
+                        <td class="text-center align-middle">
+                            @switch($booking->status)
+                                @case('pending')
+                                    <span class="badge badge-warning">Pending</span>
+                                    @break
+                                @case('payment_uploaded')
+                                    <span class="badge badge-info">Menunggu Verifikasi</span>
+                                    @break
+                                @case('approved')
+                                    <span class="badge badge-success">Disetujui</span>
+                                    @break
+                                @case('rejected')
+                                    <span class="badge badge-danger">Ditolak</span>
+                                    @break
+                                @case('completed')
+                                    <span class="badge badge-secondary">Selesai</span>
+                                    @break
+                                @default
+                                    <span class="badge badge-light">Dibatalkan</span>
+                            @endswitch
 
+                            <!-- Tombol Alasan Penolakan / Komentar Admin -->
                             @if($booking->status == 'rejected' && $booking->rejected_reason)
                                 <br>
                                 <button type="button" 
@@ -65,22 +138,29 @@
                                     <i class="fas fa-info-circle mr-1"></i> Lihat Komentar Admin
                                 </button>
                             @endif
-
                         </td>
+                        
+                        <!-- Kolom AKSI (kolom ke-10) -->
                         <td class="text-center">
-                             <!-- Tombol approve/reject untuk admin -->
-                            @if(auth()->user()->role == 'admin' && $booking->status == 'pending')
-                                <!-- Tombol Approve dengan Modal -->
-                                <button type="button" class="btn btn-success btn-sm" data-toggle="modal" data-target="#exampleModal{{ $booking->id }}">
-                                    Approve
-                                </button>
-                                @include('admin.booking.modal_approve')
-
-                                <!-- Tombol Reject dengan Modal -->
+                            @if(auth()->user()->role == 'admin' && in_array($booking->status, ['pending', 'payment_uploaded']))
+                                <!-- Validasi: hanya bisa approve jika bukti sudah diupload (untuk booking berbayar) -->
+                                @if($booking->total_amount > 0 && !$booking->bukti_pembayaran)
+                                    <button type="button" class="btn btn-success btn-sm" disabled>
+                                        Approve
+                                    </button>
+                                @else
+                                    <button type="button" class="btn btn-success btn-sm" data-toggle="modal" data-target="#exampleModal{{ $booking->id }}">
+                                        Approve
+                                    </button>
+                                @endif
+                                
                                 <button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#rejectModal{{ $booking->id }}">
                                     Reject
                                 </button>
+                                
+                                @include('admin.booking.modal_approve')
                                 @include('admin.booking.modal_reject')
+                                
                             @elseif($booking->status == 'approved')
                                 <form action="{{ route('booking.cancel', $booking->id) }}" method="POST" style="display:inline">
                                     @csrf

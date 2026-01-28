@@ -36,6 +36,8 @@ class RoomController extends Controller
             'gambar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
             'kapasitas' => 'required|integer|min:1',
             'is_active' => 'required|boolean',
+            'harga_sewa_per_hari' => 'nullable|integer|min:0',
+            'denda_per_hari' => 'nullable|integer|min:0',
         ],[
             'nama_ruangan.required' => 'Nama Ruangan wajib diisi',
             'kode_ruangan.required' => 'Kode Ruangan wajib diisi',
@@ -63,6 +65,8 @@ class RoomController extends Controller
             'kapasitas' => $request->kapasitas,
             'is_active' => $request->is_active,
             'gambar' => $gambarPath,
+            'harga_sewa_per_hari' => $request->harga_sewa_per_hari,
+            'denda_per_hari' => $request->denda_per_hari,
         ]);
 
         return redirect()->route('room')->with('success', 'Data ruangan berhasil ditambahkan');
@@ -85,6 +89,8 @@ class RoomController extends Controller
             'gambar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
             'kapasitas' => 'required|integer|min:1',
             'is_active' => 'required|boolean',
+            'harga_sewa_per_hari' => 'nullable|integer|min:0',
+            'denda_per_hari' => 'nullable|integer|min:0',
         ],[
             'nama_ruangan.required' => 'Nama Ruangan wajib diisi',
             'kode_ruangan.required' => 'Kode Ruangan wajib diisi',
@@ -98,6 +104,7 @@ class RoomController extends Controller
             'gambar.image' => 'File harus berupa gambar',
             'gambar.mimes' => 'Format gambar harus: jpeg, png, jpg, gif',
             'gambar.max' => 'Ukuran gambar maksimal 5MB',
+            
         ]);
 
         $room = Room::findOrFail($id);
@@ -106,6 +113,8 @@ class RoomController extends Controller
         $room->lokasi = $request->lokasi;
         $room->kapasitas = $request->kapasitas;
         $room->is_active = $request->is_active;
+        $room->harga_sewa_per_hari = $request->harga_sewa_per_hari;
+        $room->denda_per_hari = $request->denda_per_hari;
 
         // Update gambar jika ada
         if ($request->hasFile('gambar')) {
@@ -154,13 +163,12 @@ class RoomController extends Controller
             $query->where('lokasi', $request->lokasi);
         }
 
-        // Filter Kapasitas Minimal
-        // if ($request->filled('kapasitas_min')) {
-        //     $query->where('kapasitas', '>=', $request->kapasitas_min);
-        // }
+        // Urutkan berdasarkan lokasi
+        $query->orderByRaw("CASE WHEN lokasi = 'PASCA' THEN 0 ELSE 1 END")
+              ->orderBy('lokasi', 'asc')
+              ->orderBy('kode_ruangan', 'asc');
 
-        // Urutkan berdasarkan kode_ruangan
-        $rooms = $query->orderBy('kode_ruangan', 'asc')->get();
+        $rooms = $query->get();
 
         // Ambil daftar lokasi unik untuk dropdown filter
         $lokasiList = Room::where('is_active', true)
@@ -168,9 +176,12 @@ class RoomController extends Controller
                           ->unique()
                           ->sort()
                           ->values();
-        
-        $title = 'Daftar Ruangan Tersedia';
 
-        return view('user.room-list', compact('rooms', 'lokasiList', 'title'));
+        return view('user.room-list', [
+            'rooms' => $rooms,
+            'lokasiList' => $lokasiList,
+            'title' => 'Daftar Ruangan Tersedia',
+            'menuUserRoom' => 'active',
+        ]);
     }
 }

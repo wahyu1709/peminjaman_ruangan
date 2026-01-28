@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
-// use App\Mail\BookingStatusUpdated;
 use App\Models\Room;
 use App\Models\Booking;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-// use Illuminate\Support\Facades\Mail;
 use Yajra\DataTables\Facades\DataTables;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Storage;
 
 class BookingController extends Controller
 {
@@ -67,7 +67,7 @@ class BookingController extends Controller
         // Cek konflik
         $conflict = Booking::where('room_id', $request->room_id)
             ->where('tanggal_pinjam', $request->tanggal_pinjam)
-            ->where('status', '!=', 'rejected')
+            ->whereNotIn('status', ['rejected', 'cancelled'])
             ->where(function ($query) use ($request) {
                 $query->where('waktu_mulai', '<=', $request->waktu_selesai)
                     ->where('waktu_selesai', '>=', $request->waktu_mulai);
@@ -80,7 +80,9 @@ class BookingController extends Controller
                 ->withInput();
         }
 
-        Booking::create([
+        $totalAmount = $room->harga_sewa_per_hari ?? 0;
+
+        $booking = Booking::create([
             'user_id' => Auth::id(),
             'room_id' => $request->room_id,
             'tanggal_pinjam' => $request->tanggal_pinjam,
@@ -88,28 +90,54 @@ class BookingController extends Controller
             'waktu_selesai' => $request->waktu_selesai,
             'keperluan' => $request->keperluan,
             'role_unit' => $request->role_unit,
+            'total_amount' => $totalAmount, 
         ]);
 
-        return redirect()->route('booking')->with('success', 'Peminjaman ruangan berhasil diajukan');
+        // Generate invoice jika berbayar
+        if ($totalAmount > 0) {
+            $invoiceNumber = 'INV/' . now()->format('Y') . '/' . str_pad($booking->id, 4, '0', STR_PAD_LEFT);
+            $pdf = Pdf::loadView('booking.pdf.invoice', ['booking' => $booking]);
+            $invoicePath = 'invoices/invoice_' . $booking->id . '_' . time() . '.pdf';
+            Storage::disk('public')->put($invoicePath, $pdf->output());
+            
+            $booking->update([
+                'invoice_number' => $invoiceNumber,
+                'invoice_path' => $invoicePath,
+            ]);
+        }
+
+        // Redirect
+        if ($totalAmount > 0) {
+            return redirect()->route('dashboard')
+                ->with('success', 'Peminjaman berhasil diajukan!')
+                ->with('invoice_url', Storage::url($booking->invoice_path));
+        } else {
+            return redirect()->route('dashboard')
+                ->with('success', 'Peminjaman berhasil diajukan. Tunggu persetujuan admin.');
+        }
     }
 
     public function approve(Request $request,$id)
     {
-        $booking = Booking::findOrFail($id);
-        
+        $booking = Booking::with('room')->findOrFail($id);
+    
         // Hanya admin yang boleh approve
         if (Auth::user()->role !== 'admin') {
             abort(403);
         }
 
+        // Validasi untuk booking berbayar
+        if ($booking->total_amount > 0 && !$booking->bukti_pembayaran) {
+            return back()->withErrors([
+                'status' => 'Booking berbayar harus memiliki bukti pembayaran sebelum disetujui!'
+            ]);
+        }
+
         $booking->update([
             'status' => 'approved',
             'admin_comment' => $request->admin_comment ?? null,
-            ]);
+        ]);
         
-        // kirim email notifikasi approve
-        // Mail::to($booking->user->email)->send(new BookingStatusUpdated($booking, 'approved', $request->admin_comment ?? null));
-
         return back()->with('success', 'Booking telah disetujui');
     }
 
@@ -135,9 +163,6 @@ class BookingController extends Controller
             'status' => 'rejected',
             'rejected_reason' => $request->rejected_reason,
             ]);
-
-        // kirim email notifikasi rejected
-        // Mail::to($booking->user->email)->send(new BookingStatusUpdated($booking, 'rejected', $request->rejected_reason));
 
         return back()->with('success', 'Booking telah ditolak');
     }
@@ -273,5 +298,53 @@ class BookingController extends Controller
         $title = 'Ajukan Perpanjangan Peminjaman';
 
         return view('admin.booking.create', compact('rooms', 'data', 'title'));
+    }
+
+    public function showUploadProof($id)
+    {
+        $booking = Booking::with('room', 'user')
+            ->where('user_id', auth()->id())
+            ->findOrFail($id);
+
+        // Pastikan ini booking berbayar
+        if (!$booking->total_amount || $booking->total_amount <= 0) {
+            abort(404);
+        }
+
+        $title = 'Upload Bukti Pembayaran';
+
+        return view('booking.upload-proof', compact(['booking', 'title']));
+    }
+
+    public function uploadProof(Request $request, $id)
+    {
+        $booking = Booking::where('user_id', auth()->id())->findOrFail($id);
+
+        // Validasi
+        $request->validate([
+            'bukti_pembayaran' => 'required|file|mimes:jpeg,png,jpg,pdf|max:5120',
+        ], [
+            'bukti_pembayaran.required' => 'Bukti pembayaran wajib diupload',
+            'bukti_pembayaran.file' => 'File harus berupa gambar atau PDF',
+            'bukti_pembayaran.mimes' => 'Format file harus: jpeg, png, jpg, pdf',
+            'bukti_pembayaran.max' => 'Ukuran file maksimal 5MB'
+        ]);
+
+        // Hapus bukti lama jika ada
+        if ($booking->bukti_pembayaran) {
+            Storage::disk('public')->delete($booking->bukti_pembayaran);
+        }
+
+        // Simpan bukti baru
+        $path = $request->file('bukti_pembayaran')->store('payment_proofs', 'public');
+
+        $booking->update([
+            'bukti_pembayaran' => $path,
+            'payment_uploaded_at' => now(),
+            'status' => 'payment_uploaded' // ubah status
+        ]);
+
+        return redirect()->route('booking.upload.proof.show', $booking->id)
+            ->with('success', 'Bukti pembayaran berhasil diupload! Menunggu verifikasi dari admin.');
     }
 }
