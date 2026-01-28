@@ -50,6 +50,11 @@ class DashboardController extends Controller
                     ->orderBy('waktu_mulai', 'asc')
                     ->get(),
                  'pendingOver1Hour' => $pendingOver1Hour,
+                 'pendingPaidBookings' => $user->bookings()
+                    ->where('total_amount', '>', 0)
+                    ->where('status', 'pending')
+                    ->whereNull('bukti_pembayaran')
+                    ->count(),
             ]);
 
         } else { 
@@ -70,11 +75,7 @@ class DashboardController extends Controller
                     ->whereDate('tanggal_pinjam', $today)
                     ->orderBy('waktu_mulai', 'asc')
                     ->get(),
-                'pendingPaidBookings' => $user->bookings()
-                    ->where('total_amount', '>', 0)
-                    ->where('status', 'pending')
-                    ->whereNull('bukti_pembayaran')
-                    ->count(),
+                'pendingPaidBookings' => $pendingPaidBookings,
             ]);
         }
         return view('dashboard', $data);
@@ -212,7 +213,7 @@ class DashboardController extends Controller
 
             $labels[] = $room->kode_ruangan . ' - ' . $room->nama_ruangan;
             $data[] = $booking->total;
-            $colors[] = $room->is_paid ? '#ff6b6b' : '#4e73df';
+            $colors[] = $room->harga_sewa_per_hari ? '#ff6b6b' : '#4e73df';
         }
 
         // Tentukan periode untuk judul
@@ -409,7 +410,7 @@ class DashboardController extends Controller
 
             $labels[] = $room->kode_ruangan . ' - ' . $room->nama_ruangan;
             $data[] = $booking->total;
-            $is_paid[] = $room->is_paid;
+            $is_paid[] = $room->harga_sewa_per_hari;
         }
 
         return [

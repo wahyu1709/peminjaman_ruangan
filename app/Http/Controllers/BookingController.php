@@ -96,14 +96,22 @@ class BookingController extends Controller
         // Generate invoice jika berbayar
         if ($totalAmount > 0) {
             $invoiceNumber = 'INV/' . now()->format('Y') . '/' . str_pad($booking->id, 4, '0', STR_PAD_LEFT);
+            
+            // SIMPAN DULU KE DATABASE
+            $booking->update([
+                'invoice_number' => $invoiceNumber,
+            ]);
+            
+            // LOAD ULANG DATA AGAR INVOICE_NUMBER TERISI
+            $booking->load('room'); // atau refresh()
+            
+            // BARU GENERATE PDF
             $pdf = Pdf::loadView('booking.pdf.invoice', ['booking' => $booking]);
             $invoicePath = 'invoices/invoice_' . $booking->id . '_' . time() . '.pdf';
             Storage::disk('public')->put($invoicePath, $pdf->output());
             
-            $booking->update([
-                'invoice_number' => $invoiceNumber,
-                'invoice_path' => $invoicePath,
-            ]);
+            // UPDATE PATH
+            $booking->update(['invoice_path' => $invoicePath]);
         }
 
         // Redirect

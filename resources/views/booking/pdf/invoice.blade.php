@@ -64,7 +64,8 @@
     <div class="header">
         <h1>INVOICE PEMINJAMAN RUANGAN</h1>
         <p>Fakultas Ilmu Keperawatan Universitas Indonesia</p>
-        <p>Jl. Salemba Raya No.6, Jakarta Pusat</p>
+        <p>Gedung A Lantai 2, Rumpun Ilmu Kesehatan (RIK), Kampus UI Depok,
+Jl. Prof. Dr. Bahder Djohan, Kampus UI Depok, Pondok Cina, Kecamatan Beji, Kota Depok, Jawa Barat 16424, Indonesia.</p>
     </div>
     
     <div class="content">
@@ -90,7 +91,7 @@
                 </tr>
                 <tr>
                     <td><strong>NIM:</strong></td>
-                    <td>{{ $booking->user->username }}</td>
+                    <td>{{ $booking->user->nim_nip }}</td>
                 </tr>
                 <tr>
                     <td><strong>Email:</strong></td>
@@ -153,7 +154,7 @@
         <!-- Informasi Bank -->
         <div class="bank-info">
             <h4>Informasi Pembayaran</h4>
-            <p><strong>Bank BNI</strong><br>
+            <p><strong>Bank XYZ</strong><br>
             Atas Nama: Fakultas Ilmu Keperawatan UI<br>
             Nomor Rekening: 1234567890</p>
             <p><em>Silakan transfer sesuai nominal di atas dan upload bukti pembayaran.</em></p>

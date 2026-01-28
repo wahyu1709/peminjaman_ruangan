@@ -17,8 +17,8 @@
         </div>
     @endif
 
-    <!-- Card Upload Bukti (untuk user) -->
-    @if(auth()->user()->role != 'admin' && $pendingPaidBookings > 0)
+    <!-- Card Upload Bukti  -->
+    @if($pendingPaidBookings > 0)
         <div class="alert alert-warning mb-4">
             <i class="fas fa-exclamation-triangle me-2"></i>
             Anda memiliki <strong>{{ $pendingPaidBookings }}</strong> peminjaman ruangan berbayar yang belum upload bukti pembayaran!
