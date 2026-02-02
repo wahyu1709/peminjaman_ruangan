@@ -95,7 +95,7 @@ document.addEventListener('DOMContentLoaded', function () {
         columns: [
             { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
             { data: 'user.name', name: 'user.name' },
-            { data: 'room.nama_ruangan', name: 'room.nama_ruangan' },
+            { data: 'room.kode_ruangan', name: 'room.kode_ruangan' },
             { data: 'tanggal_pinjam', name: 'tanggal_pinjam' },
             { data: 'time_range', name: 'time_range' },
             { data: 'keperluan', name: 'keperluan' },
@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // Filter tabel berdasarkan status
-    document.getElementById('filterStatus').addEventListener('change', function() {
+    document.getElementById('filter_status').addEventListener('change', function() {
         const status = this.value;
         const rows = document.querySelectorAll('#bookingTable tbody tr');
         

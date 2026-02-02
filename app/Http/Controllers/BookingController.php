@@ -234,8 +234,8 @@ class BookingController extends Controller
             $query->whereDate('tanggal_pinjam', '<=', $request->end_date);
         }
 
-        $query->orderBy('tanggal_pinjam', 'desc')
-                ->orderBy('waktu_mulai', 'desc'); 
+        $query->orderBy('tanggal_pinjam', 'asc')
+                ->orderBy('waktu_mulai', 'asc'); 
 
         return DataTables::of($query)
         ->addColumn('time_range', function ($booking) {
@@ -244,11 +244,20 @@ class BookingController extends Controller
         })
         ->addColumn('status_badge', function ($booking) {
             switch ($booking->status) {
-                case 'pending': return '<span class="badge badge-warning">Pending</span>';
-                case 'approved': return '<span class="badge badge-success">Disetujui</span>';
-                case 'rejected': return '<span class="badge badge-danger">Ditolak</span>';
-                case 'completed': return '<span class="badge badge-info">Selesai</span>';
-                default: return '<span class="badge badge-secondary">Dibatalkan</span>';
+                case 'pending': 
+                    return '<span class="badge badge-warning">Pending</span>';
+                case 'payment_uploaded':
+                    return '<span class="badge badge-info">Menunggu Verifikasi</span>';
+                case 'approved': 
+                    return '<span class="badge badge-success">Disetujui</span>';
+                case 'rejected': 
+                    return '<span class="badge badge-danger">Ditolak</span>';
+                case 'completed': 
+                    return '<span class="badge badge-info">Selesai</span>';
+                case 'cancelled':
+                    return '<span class="badge badge-secondary">Dibatalkan</span>';
+                default: 
+                    return '<span class="badge badge-secondary">Tidak Diketahui</span>';
             }
         })
         ->addColumn('action', function ($booking) {

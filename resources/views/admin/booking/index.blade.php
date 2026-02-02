@@ -37,8 +37,10 @@
                     @foreach ($bookings as $booking)
                     <tr>
                         <td class="text-center">{{ $loop->iteration }}</td>
-                        <td>{{ $booking->user->name }}</td>
-                        <td>{{ $booking->room->nama_ruangan }}</td>
+                        <td>{{ $booking->user->name }} <br>
+                            <small class="text-muted">({{ $booking->user->jenis_pengguna }})</small>
+                        </td>
+                        <td>{{ $booking->room->kode_ruangan }}</td>
                         <td>{{ $booking->tanggal_pinjam }}</td>
                         <td>
                             {{ \Carbon\Carbon::parse($booking->waktu_mulai)->format('H:i') }} - 
