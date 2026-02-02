@@ -80,7 +80,22 @@ class BookingController extends Controller
                 ->withInput();
         }
 
-        $totalAmount = $room->harga_sewa_per_hari ?? 0;
+        // ✅ TENTUKAN HARGA BERDASARKAN JENIS PENGGUNA
+        $userType = Auth::user()->jenis_pengguna ?? 'mahasiswa';
+        $totalAmount = 0;
+
+        if ($userType == 'umum') {
+            // Untuk UMUM: SEMUA ruangan berbayar
+            if ($room->harga_sewa_per_hari > 0) {
+                $totalAmount = $room->harga_sewa_per_hari;
+            } else {
+                // Gunakan harga dari .env
+                $totalAmount = config('booking.harga_umum_default');
+            }
+        } else {
+            // Internal: sesuai database
+            $totalAmount = $room->harga_sewa_per_hari ?? 0;
+        }
 
         $booking = Booking::create([
             'user_id' => Auth::id(),

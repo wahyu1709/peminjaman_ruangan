@@ -82,6 +82,7 @@
                                                 <option value="mahasiswa">Mahasiswa</option>
                                                 <option value="staff">Staff</option>
                                                 <option value="dosen">Dosen</option>
+                                                <option value="umum">Umum</option>
                                             </select>
                                         </div>
 

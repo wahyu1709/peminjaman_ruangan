@@ -22,6 +22,14 @@
         </div>
         @endif
 
+        @if(auth()->user()->jenis_pengguna === 'umum')
+        <div class="alert alert-warning mb-4">
+            <i class="fas fa-info-circle mr-2"></i>
+            <strong>Info untuk Pengguna Umum:</strong><br>
+            Semua ruangan dikenakan biaya sewa. Anda akan menerima invoice setelah mengajukan peminjaman.
+        </div>
+        @endif
+
         <form action="{{ route('bookingStore') }}" method="POST">
             @csrf
             <div class="row">
@@ -31,12 +39,30 @@
                         <select name="room_id" id="room_id" class="form-control @error('room_id') is-invalid @enderror" required>
                             <option value="" disabled selected>-- Pilih Ruangan --</option>
                             @foreach($rooms as $room)
+                                @php
+                                    $userType = auth()->user()->jenis_pengguna ?? 'mahasiswa';
+                                    $displayPrice = 0;
+                                    
+                                    if ($userType === 'umum') {
+                                        // Untuk umum: semua berbayar
+                                        $displayPrice = $room->harga_sewa_per_hari > 0 
+                                            ? $room->harga_sewa_per_hari 
+                                            : config('booking.harga_umum_default', 500000);
+                                    } else {
+                                        // Untuk internal: sesuai database
+                                        $displayPrice = $room->harga_sewa_per_hari ?? 0;
+                                    }
+                                @endphp
+                                
                                 <option value="{{ $room->id }}"
-                                        data-harga="{{ $room->harga_sewa_per_hari ?? '' }}"
-                                        data-denda="{{ $room->denda_per_hari ?? '' }}">
-                                    {{ $room->kode_ruangan }} - {{ $room->nama_ruangan }} 
-                                    @if($room->harga_sewa_per_hari)
-                                        <span class="badge bg-warning text-dark ms-2">Berbayar</span>
+                                        data-harga="{{ $displayPrice }}"
+                                        data-denda="{{ $room->denda_per_hari ?? '' }}"
+                                        {{ old('room_id', $data['room_id'] ?? '') == $room->id ? 'selected' : '' }}>
+                                    {{ $room->kode_ruangan }} - {{ $room->nama_ruangan }}
+                                    @if($displayPrice > 0)
+                                        (Rp {{ number_format($displayPrice, 0, ',', '.') }}/hari)
+                                    @else
+                                        (Gratis)
                                     @endif
                                     ({{ $room->lokasi }})
                                 </option>
@@ -45,6 +71,7 @@
                         @error('room_id') <small class="text-danger">{{ $message }}</small> @enderror
                     </div>
                 </div>
+
                 <div class="col-xl-6">
                     <div class="form-label">
                         <label>Tanggal Pinjam <span class="text-danger">*</span></label>
