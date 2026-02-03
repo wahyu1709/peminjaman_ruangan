@@ -58,18 +58,12 @@
                         <span>Manajemen Ruangan</span></a>
                 </li>
 
-                <!-- Nav Item - Charts -->
-                <li class="nav-item {{ $menuAdminUser ?? '' }}">
-                    <a class="nav-link" href="{{ route('user') }}">
-                        <i class="fas fa-user"></i>
-                        <span>Manajemen Mahasiswa</span></a>
-                </li>
-
-                <!-- Nav Item - Tables -->
-                <li class="nav-item {{ $menuAdminAdmin ?? '' }}">
-                    <a class="nav-link" href="{{ route('admin') }}">
-                        <i class="fas fa-user-tie"></i>
-                        <span>Manajemen Admin</span></a>
+                <!-- Menu Pengguna -->
+                <li class="nav-item {{ $menuAdminUsers ?? '' }}">
+                    <a class="nav-link" href="{{ route('users.index') }}">
+                        <i class="fas fa-users"></i>
+                        <span>Manajemen Pengguna</span>
+                    </a>
                 </li>
 
                 <!-- Divider -->

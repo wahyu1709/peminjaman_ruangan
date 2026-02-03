@@ -5,11 +5,10 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\RoomController;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\AdminController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\UserManagementController;
 
 Route::get('/', [HomeController::class, 'index'])->name('welcome');
 
@@ -48,25 +47,15 @@ Route::middleware('checkLogin')->group(function(){
     Route::post('/settings/password', [SettingsController::class, 'updatePassword'])->name('settings.password');
     
     Route::middleware('isAdmin')->group(function(){
-        // User
-        Route::get('/user', [UserController::class, 'index'])->name('user');
-        Route::get('/user/create', [UserController::class, 'create'])->name('userCreate');
-        Route::post('/user/store', [UserController::class, 'store'])->name('userStore');
-        Route::get('/user/edit/{id}', [UserController::class, 'edit'])->name('userEdit');
-        Route::match(['PUT', 'PATCH'], '/user/update/{id}', [UserController::class, 'update'])->name('userUpdate');
-        Route::delete('/user/destroy/{id}', [UserController::class, 'destroy'])->name('userDestroy');
-        Route::get('/user/excel', [UserController::class, 'excel'])->name('userExcel');
-        Route::get('/user/pdf', [UserController::class, 'pdf'])->name('userPdf');
-        
-        // Admin (Manajemen Admin - staff & dosen)
-        Route::get('/admin', [AdminController::class, 'index'])->name('admin');
-        Route::get('/admin/create', [AdminController::class, 'create'])->name('adminCreate');
-        Route::post('/admin/store', [AdminController::class, 'store'])->name('adminStore');
-        Route::get('/admin/edit/{id}', [AdminController::class, 'edit'])->name('adminEdit');
-        Route::match(['PUT', 'PATCH'], '/admin/manage/{id}', [AdminController::class, 'manage'])->name('adminUpdate');
-        Route::delete('/admin/destroy/{id}', [AdminController::class, 'destroy'])->name('adminDestroy');
-        Route::get('/admin/excel', [AdminController::class, 'excel'])->name('adminExcel');
-        Route::get('/admin/pdf', [AdminController::class, 'pdf'])->name('adminPdf');
+
+        // Manajemen Pengguna (All in One)
+        Route::get('/users', [UserManagementController::class, 'index'])->name('users.index');
+        Route::get('/users/data', [UserManagementController::class, 'getData'])->name('users.data');
+        Route::post('/users', [UserManagementController::class, 'store'])->name('users.store');
+        Route::put('/users/{id}', [UserManagementController::class, 'update'])->name('users.update');
+        Route::delete('/users/{id}', [UserManagementController::class, 'destroy'])->name('users.destroy');
+        Route::get('/users/excel', [UserManagementController::class, 'excel'])->name('users.excel');
+        Route::get('/users/pdf', [UserManagementController::class, 'pdf'])->name('users.pdf');
         
         // Room
         Route::get('/room', [RoomController::class, 'index'])->name('room');
