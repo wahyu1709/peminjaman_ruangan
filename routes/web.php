@@ -64,6 +64,7 @@ Route::middleware('checkLogin')->group(function(){
         Route::get('/room/edit/{id}', [RoomController::class, 'edit'])->name('roomEdit');
         Route::match(['PUT', 'PATCH'], '/room/update/{id}', [RoomController::class, 'update'])->name('roomUpdate');
         Route::delete('/room/destroy/{id}', [RoomController::class, 'destroy'])->name('roomDestroy');
+        Route::delete('/rooms/{id}/delete-image', [RoomController::class, 'deleteImage'])->name('rooms.delete-image');
     
         // Statistik peminjaman
         Route::get('/statistics', [DashboardController::class, 'statistics'])->name('statistics');

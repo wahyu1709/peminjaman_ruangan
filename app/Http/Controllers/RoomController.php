@@ -184,4 +184,22 @@ class RoomController extends Controller
             'menuUserRoom' => 'active',
         ]);
     }
+
+    public function deleteImage($id)
+    {
+        $room = Room::findOrFail($id);
+
+        // Hapus file dari storage
+        if ($room->gambar && Storage::exists('public/' . $room->gambar)) {
+            Storage::delete('public/' . $room->gambar);
+        }
+
+        // Set kolom gambar = NULL
+        $room->update(['gambar' => null]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Foto ruangan berhasil dihapus.'
+        ]);
+    }
 }

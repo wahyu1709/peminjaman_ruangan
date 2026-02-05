@@ -110,11 +110,22 @@
                     Foto Ruangan :
                 </label>
                 <input type="file" name="gambar" class="form-control @error('gambar') is-invalid @enderror" accept="image/*">
+                
+                <!-- Tampilkan gambar saat ini + tombol hapus -->
                 @if ($room->gambar)
                     <div class="mt-2">
-                        <img src="{{ asset('storage/' . $room->gambar) }}" alt="Gambar {{ $room->nama_ruangan }}" style="max-height: 150px; border-radius: 5px;">
+                        <img src="{{ asset('storage/' . $room->gambar) }}" 
+                             alt="Gambar {{ $room->nama_ruangan }}" 
+                             class="img-thumbnail" 
+                             style="max-height: 150px;">
+                        <div class="mt-2">
+                            <button type="button" class="btn btn-sm btn-danger" id="deleteImageBtn">
+                                <i class="fas fa-trash mr-1"></i> Hapus Gambar
+                            </button>
+                        </div>
                     </div>
                 @endif
+                
                 @error('gambar')
                     <small class="text-danger">{{ $message }}</small>
                 @enderror
@@ -148,3 +159,50 @@
 </div>
 
 @endsection
+
+@push('scripts')
+<script>
+$(document).ready(function() {
+    // Hapus gambar
+    $('#deleteImageBtn').on('click', function() {
+        Swal.fire({
+            title: 'Hapus Foto?',
+            text: 'Yakin ingin menghapus foto ruangan? Aksi ini tidak bisa dikembalikan.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Kirim request DELETE
+                $.ajax({
+                    url: "{{ route('rooms.delete-image', $room->id) }}",
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    success: function(response) {
+                        Swal.fire('Berhasil!', response.message, 'success').then(() => {
+                            // Update UI
+                            $('#deleteImageBtn').parent().remove();
+                            $('.img-thumbnail').remove();
+                            $('input[name="gambar"]').val('');
+                            window.location.reload();
+                        });
+                    },
+                    error: function(xhr) {
+                        if (xhr.status === 419) {
+                            Swal.fire('Error!', 'Sesi telah kadaluarsa. Silakan refresh halaman.', 'error');
+                        } else {
+                            Swal.fire('Error!', 'Gagal menghapus gambar', 'error');
+                        }
+                    }
+                });
+            }
+        });
+    });
+});
+</script>
+@endpush
