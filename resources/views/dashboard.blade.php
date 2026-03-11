@@ -6,40 +6,15 @@
         <h1 class="h3 mb-0 text-gray-800">{{ $title }}</h1>
     </div>
 
-    <!-- Alert Invoice (dipindahkan ke sini) -->
-    @if(session('invoice_url'))
-        <div class="alert alert-success mb-4">
-            <i class="fas fa-file-invoice mr-2"></i>
-            <strong>Invoice Anda sudah siap!</strong><br>
-            <a href="{{ session('invoice_url') }}" target="_blank" class="btn btn-primary btn-sm mt-2">
-                <i class="fas fa-download mr-1"></i> Download Invoice
-            </a>
-        </div>
-    @endif
-
-    <!-- Card Upload Bukti  -->
+    <!-- Alert Info Upload Bukti (Updated) -->
     @if($pendingPaidBookings > 0)
         <div class="alert alert-warning mb-4">
-            <i class="fas fa-exclamation-triangle me-2"></i>
+            <i class="fas fa-exclamation-triangle mr-2"></i>
             Anda memiliki <strong>{{ $pendingPaidBookings }}</strong> peminjaman ruangan berbayar yang belum upload bukti pembayaran!
             
-            @if($pendingPaidBookings == 1)
-                @php
-                    $firstBooking = Auth::user()->bookings()
-                        ->where('total_amount', '>', 0)
-                        ->where('status', 'pending')
-                        ->whereNull('bukti_pembayaran')
-                        ->first();
-                @endphp
-                <a href="{{ route('booking.upload.proof.show', $firstBooking->id) }}" 
-                class="btn btn-warning btn-sm ms-2">
-                    <i class="fas fa-upload me-1"></i> Upload Bukti
-                </a>
-            @else
-                <a href="{{ route('booking') }}" class="btn btn-warning btn-sm ms-2">
-                    <i class="fas fa-list me-1"></i> Lihat Semua
-                </a>
-            @endif
+            <a href="{{ route('booking') }}" class="btn btn-warning btn-sm ml-2">
+                <i class="fas fa-arrow-right mr-1"></i> Lihat & Upload Bukti
+            </a>
         </div>
     @endif
 

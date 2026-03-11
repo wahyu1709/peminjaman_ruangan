@@ -19,10 +19,10 @@ return new class extends Migration
             $table->time('waktu_mulai');
             $table->time('waktu_selesai');
             $table->string('keperluan');
-            $table->string('role_unit')->nullable();
+            // $table->string('role_unit')->nullable();
             $table->enum('status', ['pending', 'approved', 'rejected', 'completed', 'cancelled'])->default('pending');
-            $table->text('rejected_reason')->nullable();
-            $table->text('admin_comment')->nullable();
+            // $table->text('rejected_reason')->nullable();
+            // $table->text('admin_comment')->nullable();
             $table->timestamps();
         });
     }

@@ -130,4 +130,35 @@
         <i class="fas fa-angle-up"></i>
     </a>
 
+    <div class="whatsapp-float">
+        <a href="https://wa.me/6281234567890?text=Halo%20Admin%20FIK%20UI" 
+        target="_blank" 
+        class="btn btn-success rounded-circle shadow-lg">
+            <i class="fab fa-whatsapp fa-2x"></i>
+        </a>
+    </div>
+
+    <style>
+    .whatsapp-float {
+        position: fixed;
+        width: 60px;
+        height: 60px;
+        bottom: 40px;
+        right: 40px;
+        z-index: 1000;
+    }
+    .whatsapp-float .btn {
+        width: 100%;
+        height: 100%;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .whatsapp-float:hover .btn {
+        transform: scale(1.1);
+        transition: transform 0.2s;
+    }
+    </style>
+
 @include('layouts/footer')

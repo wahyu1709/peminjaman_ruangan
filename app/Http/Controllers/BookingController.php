@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
 use App\Models\Room;
 use App\Models\Booking;
 use Illuminate\Http\Request;
@@ -9,314 +10,205 @@ use Illuminate\Support\Facades\Auth;
 use Yajra\DataTables\Facades\DataTables;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class BookingController extends Controller
 {
-    public function index(){
-        if (Auth::user()->role == 'admin') {
-            $data = array(
-                'title' => 'Data Peminjaman Ruangan',
-                'menuAdminBooking' => 'active'
-            );
-            $bookings = Booking::with(['user', 'room'])->latest()->get();
-            return view('admin.booking.index', array_merge($data, ['bookings' => $bookings]));
-        } else {
-            $data = array(
-                'title' => 'Data Peminjaman Ruangan',
-                'menuUserBooking' => 'active'
-            );
-            $bookings = Booking::with('room')
-                               ->where('user_id', Auth::id())
-                               ->latest()->get();
-            return view('user.booking.index', array_merge($data, ['bookings' => $bookings]));
-        }
+    use AuthorizesRequests;
+
+    /**
+     * Display booking list (Admin: all bookings, User: own bookings)
+     */
+    public function index()
+    {
+        $isAdmin = Auth::user()->role === 'admin';
+        
+        $data = [
+            'title' => 'Data Peminjaman Ruangan',
+            'menuAdminBooking' => $isAdmin ? 'active' : '',
+            'menuUserBooking' => !$isAdmin ? 'active' : '',
+        ];
+
+        $bookings = $isAdmin 
+            ? Booking::with(['user', 'room'])->latest()->get()
+            : Booking::with('room')->where('user_id', Auth::id())->latest()->get();
+
+        $view = $isAdmin ? 'admin.booking.index' : 'user.booking.index';
+        
+        return view($view, array_merge($data, ['bookings' => $bookings]));
     }
 
-    public function create(){
-        $data = array(
+    /**
+     * Show booking creation form
+     */
+    public function create()
+    {
+        return view('admin.booking.create', [
             'title' => 'Form Pinjam Ruangan',
             'menuBooking' => 'active',
-            'rooms' => Room::where('is_active', 1)->get(),
-        );
-        
-        return view('admin.booking.create', $data);
+            'rooms' => Room::where('is_active', true)->get(),
+        ]);
     }
 
-    public function store(Request $request){
-        $request->validate([
+    /**
+     * Store new booking with pricing logic based on SK No. 411
+     */
+    public function store(Request $request)
+    {
+        // Validation
+        $validated = $request->validate([
             'room_id' => 'required|exists:rooms,id',
             'tanggal_pinjam' => 'required|date|after_or_equal:today',
             'waktu_mulai' => 'required|date_format:H:i',
             'waktu_selesai' => 'required|date_format:H:i|after:waktu_mulai',
-            'keperluan' => 'required|string',
+            'keperluan' => 'required|string|max:500',
             'role_unit' => 'nullable|string|max:255',
-        ],[
-            'room_id.required'       => 'Ruangan wajib dipilih',
-            'tanggal_pinjam.required'=> 'Tanggal pinjam wajib diisi',
+        ], [
+            'room_id.required' => 'Ruangan wajib dipilih',
             'tanggal_pinjam.after_or_equal' => 'Tanggal tidak boleh kemarin',
-            'waktu_selesai.after'    => 'Waktu selesai harus setelah waktu mulai',
-            'keperluan.required'     => 'Keperluan wajib diisi',
+            'waktu_selesai.after' => 'Waktu selesai harus setelah waktu mulai',
+            'keperluan.required' => 'Keperluan wajib diisi',
         ]);
 
-        // Cek apakah ruangan aktif
-        $room = Room::find($request->room_id);
+        $user = Auth::user();
+        $room = Room::findOrFail($request->room_id);
+        $tanggal = Carbon::parse($request->tanggal_pinjam);
+
+        // Check room availability
         if (!$room->is_active) {
-            return back()->withErrors(['room_id' => 'Ruangan ini tidak tersedia untuk booking'])->withInput();
+            return back()->withErrors(['room_id' => 'Ruangan tidak tersedia'])->withInput();
         }
 
-        // Cek konflik
-        $conflict = Booking::where('room_id', $request->room_id)
-            ->where('tanggal_pinjam', $request->tanggal_pinjam)
-            ->whereNotIn('status', ['rejected', 'cancelled'])
-            ->where(function ($query) use ($request) {
-                $query->where('waktu_mulai', '<=', $request->waktu_selesai)
-                    ->where('waktu_selesai', '>=', $request->waktu_mulai);
-            })
-            ->exists();
-
-        if ($conflict) {
+        // Check schedule conflict
+        if ($this->hasScheduleConflict($request)) {
             return back()
-                ->withErrors(['waktu_mulai' => 'Jadwal bentrok! Ruangan sudah dibooking pada waktu tersebut. Silakan pilih jam lain.'])
+                ->withErrors(['waktu_mulai' => 'Jadwal bentrok! Pilih waktu lain.'])
                 ->withInput();
         }
 
-        // ✅ TENTUKAN HARGA BERDASARKAN JENIS PENGGUNA
-        $userType = Auth::user()->jenis_pengguna ?? 'mahasiswa';
-        $totalAmount = 0;
+        // Calculate total amount
+        $totalAmount = $this->calculateTotalAmount($room, $tanggal, $user);
 
-        if ($userType == 'umum') {
-            // Untuk UMUM: SEMUA ruangan berbayar
-            if ($room->harga_sewa_per_hari > 0) {
-                $totalAmount = $room->harga_sewa_per_hari;
-            } else {
-                // Gunakan harga dari .env
-                $totalAmount = config('booking.harga_umum_default');
-            }
-        } else {
-            // Internal: sesuai database
-            $totalAmount = $room->harga_sewa_per_hari ?? 0;
+        // Validate: External users cannot book free rooms
+        if ($user->jenis_pengguna === 'umum' && $room->harga_sewa_per_hari == 0) {
+            return back()->withErrors([
+                'room_id' => 'Ruangan gratis hanya untuk Civitas Akademika FIK UI. Pilih ruangan berbayar.'
+            ])->withInput();
         }
 
+        // Create booking
         $booking = Booking::create([
-            'user_id' => Auth::id(),
+            'user_id' => $user->id,
             'room_id' => $request->room_id,
             'tanggal_pinjam' => $request->tanggal_pinjam,
             'waktu_mulai' => $request->waktu_mulai,
             'waktu_selesai' => $request->waktu_selesai,
             'keperluan' => $request->keperluan,
             'role_unit' => $request->role_unit,
-            'total_amount' => $totalAmount, 
+            'total_amount' => $totalAmount,
+            'status' => 'pending',
         ]);
 
-        // Generate invoice jika berbayar
+        // Generate invoice if paid
         if ($totalAmount > 0) {
-            $invoiceNumber = 'INV/' . now()->format('Y') . '/' . str_pad($booking->id, 4, '0', STR_PAD_LEFT);
-            
-            // SIMPAN DULU KE DATABASE
-            $booking->update([
-                'invoice_number' => $invoiceNumber,
-            ]);
-            
-            // LOAD ULANG DATA AGAR INVOICE_NUMBER TERISI
-            $booking->load('room'); // atau refresh()
-            
-            // BARU GENERATE PDF
-            $pdf = Pdf::loadView('booking.pdf.invoice', ['booking' => $booking]);
-            $invoicePath = 'invoices/invoice_' . $booking->id . '_' . time() . '.pdf';
-            Storage::disk('public')->put($invoicePath, $pdf->output());
-            
-            // UPDATE PATH
-            $booking->update(['invoice_path' => $invoicePath]);
-        }
-
-        // Redirect
-        if ($totalAmount > 0) {
+            $this->generateInvoice($booking);
             return redirect()->route('dashboard')
                 ->with('success', 'Peminjaman berhasil diajukan!')
                 ->with('invoice_url', Storage::url($booking->invoice_path));
-        } else {
-            return redirect()->route('dashboard')
-                ->with('success', 'Peminjaman berhasil diajukan. Tunggu persetujuan admin.');
         }
+
+        return redirect()->route('dashboard')
+            ->with('success', 'Peminjaman berhasil diajukan. Tunggu persetujuan admin.');
     }
 
-    public function approve(Request $request,$id)
+    /**
+     * Approve booking
+     */
+    public function approve(Request $request, $id)
     {
-        $booking = Booking::with('room')->findOrFail($id);
-    
-        // Hanya admin yang boleh approve
         if (Auth::user()->role !== 'admin') {
             abort(403);
         }
+        
+        $booking = Booking::with('room')->findOrFail($id);
 
-        // Validasi untuk booking berbayar
+        // Validate payment proof for paid bookings
         if ($booking->total_amount > 0 && !$booking->bukti_pembayaran) {
-            return back()->withErrors([
-                'status' => 'Booking berbayar harus memiliki bukti pembayaran sebelum disetujui!'
-            ]);
+            return back()->withErrors(['status' => 'Booking berbayar harus memiliki bukti pembayaran!']);
         }
 
         $booking->update([
             'status' => 'approved',
-            'admin_comment' => $request->admin_comment ?? null,
+            'admin_comment' => $request->admin_comment,
         ]);
-        
+
         return back()->with('success', 'Booking telah disetujui');
     }
 
+    /**
+     * Reject booking
+     */
     public function reject(Request $request, $id)
     {
+        if (Auth::user()->role !== 'admin') {
+            abort(403);
+        }
+
         $request->validate([
             'rejected_reason' => 'required|string|max:255'
-        ],[
+        ], [
             'rejected_reason.required' => 'Alasan penolakan wajib diisi'
         ]);
 
         $booking = Booking::findOrFail($id);
 
-        if (Auth::user()->role !== 'admin') {
-            abort(403);
-        }
-
-        if ($booking->status !== 'pending'){
-            return back()->withErrors(['status' => 'Booking tidak dapat ditolak karena statusnya bukan pending']);
+        if ($booking->status !== 'pending') {
+            return back()->withErrors(['status' => 'Hanya booking pending yang bisa ditolak']);
         }
 
         $booking->update([
             'status' => 'rejected',
             'rejected_reason' => $request->rejected_reason,
-            ]);
+        ]);
 
         return back()->with('success', 'Booking telah ditolak');
     }
 
-    public function publicList()
+    /**
+     * Cancel booking
+     */
+    public function cancel($id)
     {
-        $approvedBookings = \App\Models\Booking::with(['user', 'room'])
-            ->where('status', 'approved')
-            ->whereDate('tanggal_pinjam', '>=', now()->toDateString())
-            ->orderBy('tanggal_pinjam', 'asc')
-            ->orderBy('waktu_mulai', 'asc')
-            ->limit(30)
-            ->get();
-
-        return view('booking.public-list', compact('approvedBookings'));
-    }
-
-    public function history(){
-        $data = [
-            'title' => 'Riwayat Peminjaman Ruangan',
-            'menuAdminHistory' => 'active'
-        ];
-
-        return view('admin.booking.history.index', $data);
-    }
-
-    public function historyData(Request $request)
-    {
-        // Hanya admin yang boleh akses
-        if (Auth::user()->role !== 'admin') {
-            return response()->json(['error' => 'Unauthorized'], 403);
-        }
-
-        $query = Booking::with(['user', 'room']);
-
-        // Filter status
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
-        // Filter tanggal (single date)
-        if ($request->filled('start_date')) {
-            $query->whereDate('tanggal_pinjam', '>=', $request->start_date);
-        }
-        if ($request->filled('end_date')) {
-            $query->whereDate('tanggal_pinjam', '<=', $request->end_date);
-        }
-
-        $query->orderBy('tanggal_pinjam', 'asc')
-                ->orderBy('waktu_mulai', 'asc'); 
-
-        return DataTables::of($query)
-        ->addColumn('time_range', function ($booking) {
-            return \Carbon\Carbon::parse($booking->waktu_mulai)->format('H:i') . ' - ' . 
-                \Carbon\Carbon::parse($booking->waktu_selesai)->format('H:i');
-        })
-        ->addColumn('status_badge', function ($booking) {
-            switch ($booking->status) {
-                case 'pending': 
-                    return '<span class="badge badge-warning">Pending</span>';
-                case 'payment_uploaded':
-                    return '<span class="badge badge-info">Menunggu Verifikasi</span>';
-                case 'approved': 
-                    return '<span class="badge badge-success">Disetujui</span>';
-                case 'rejected': 
-                    return '<span class="badge badge-danger">Ditolak</span>';
-                case 'completed': 
-                    return '<span class="badge badge-info">Selesai</span>';
-                case 'cancelled':
-                    return '<span class="badge badge-secondary">Dibatalkan</span>';
-                default: 
-                    return '<span class="badge badge-secondary">Tidak Diketahui</span>';
-            }
-        })
-        ->addColumn('action', function ($booking) {
-            // Tidak ada aksi approve/reject di riwayat (karena hanya history)
-            return '<span class="text-muted">—</span>';
-        })
-        ->addIndexColumn()
-        ->rawColumns(['status_badge', 'action'])
-        ->make(true);
-    }
-
-    public function cancel($id){
         $booking = Booking::findOrFail($id);
 
-        // cek akses
-        if(auth()->user()->role === 'admin'){
-            // admin boleh batalkan semua booking
-            $allowed = true;
-        } else{
-            // user hanya boleh batalkan booking miliknya
-            $allowed = ($booking->user_id === auth()->id() && in_array($booking->status, ['pending', 'approved']));
-        }
+        $allowed = auth()->user()->role === 'admin' 
+            || ($booking->user_id === auth()->id() && in_array($booking->status, ['pending', 'approved']));
 
-        if (!$allowed){
+        if (!$allowed) {
             abort(403, 'Tidak diizinkan membatalkan peminjaman ini.');
         }
 
-        $booking->update([
-            'status' => 'cancelled',
-        ]);
+        $booking->update(['status' => 'cancelled']);
 
         return back()->with('success', 'Peminjaman berhasil dibatalkan.');
     }
 
-    public function extendForm($id){
+    /**
+     * Show extend booking form
+     */
+    public function extendForm($id)
+    {
         $original = Booking::where('id', $id)
-                    ->where('status', 'completed')
-                    ->firstOrFail();
-        
-        // cek akses
-        if(auth()->user()->role === 'admin'){
-            // admin boleh perpanjang kapan saja
-            $allowed = true;
-        } else{
-            // user hanya boleh perpanjang booking miliknya & dalam 1 jam setelah selesai
-            $endtime = \Carbon\Carbon::parse($original->tanggal_pinjam . ' ' . $original->waktu_selesai);
-            $deadline = $endtime->copy()->addHour();
-            $allowed = (
-                $original->user_id === auth()->id() &&
-                now()->lte($deadline)
-            );
+            ->where('status', 'completed')
+            ->firstOrFail();
+
+        // Check permission
+        $allowed = $this->canExtendBooking($original);
+
+        if (!$allowed) {
+            return back()->withErrors(['error' => 'Anda tidak diizinkan mengajukan perpanjangan.']);
         }
 
-        if(!$allowed){
-            return redirect()->back()->withErrors([
-                'error' => 'Anda tidak diizinkan untuk mengajukan perpanjangan untuk peminjaman ini.'
-            ]);
-        }
-        
         $data = [
             'room_id' => $original->room_id,
             'tanggal_pinjam' => $original->tanggal_pinjam,
@@ -325,58 +217,217 @@ class BookingController extends Controller
             'role_unit' => $original->role_unit,
         ];
 
-        $rooms = Room::where('is_active', true)->orderBy('kode_ruangan')->get();
-
-        $title = 'Ajukan Perpanjangan Peminjaman';
-
-        return view('admin.booking.create', compact('rooms', 'data', 'title'));
+        return view('admin.booking.create', [
+            'rooms' => Room::where('is_active', true)->orderBy('kode_ruangan')->get(),
+            'data' => $data,
+            'title' => 'Ajukan Perpanjangan Peminjaman',
+        ]);
     }
 
+    /**
+     * Show upload proof form
+     */
     public function showUploadProof($id)
     {
         $booking = Booking::with('room', 'user')
             ->where('user_id', auth()->id())
             ->findOrFail($id);
 
-        // Pastikan ini booking berbayar
-        if (!$booking->total_amount || $booking->total_amount <= 0) {
+        if ($booking->total_amount <= 0) {
             abort(404);
         }
 
-        $title = 'Upload Bukti Pembayaran';
-
-        return view('booking.upload-proof', compact(['booking', 'title']));
+        return view('booking.upload-proof', [
+            'booking' => $booking,
+            'title' => 'Upload Bukti Pembayaran',
+        ]);
     }
 
+    /**
+     * Upload payment proof
+     */
     public function uploadProof(Request $request, $id)
     {
         $booking = Booking::where('user_id', auth()->id())->findOrFail($id);
 
-        // Validasi
         $request->validate([
             'bukti_pembayaran' => 'required|file|mimes:jpeg,png,jpg,pdf|max:5120',
         ], [
             'bukti_pembayaran.required' => 'Bukti pembayaran wajib diupload',
-            'bukti_pembayaran.file' => 'File harus berupa gambar atau PDF',
-            'bukti_pembayaran.mimes' => 'Format file harus: jpeg, png, jpg, pdf',
-            'bukti_pembayaran.max' => 'Ukuran file maksimal 5MB'
+            'bukti_pembayaran.mimes' => 'Format: jpeg, png, jpg, pdf',
+            'bukti_pembayaran.max' => 'Ukuran maksimal 5MB',
         ]);
 
-        // Hapus bukti lama jika ada
+        // Delete old proof
         if ($booking->bukti_pembayaran) {
             Storage::disk('public')->delete($booking->bukti_pembayaran);
         }
 
-        // Simpan bukti baru
+        // Store new proof
         $path = $request->file('bukti_pembayaran')->store('payment_proofs', 'public');
 
         $booking->update([
             'bukti_pembayaran' => $path,
             'payment_uploaded_at' => now(),
-            'status' => 'payment_uploaded' // ubah status
+            'status' => 'payment_uploaded',
         ]);
 
-        return redirect()->route('booking.upload.proof.show', $booking->id)
-            ->with('success', 'Bukti pembayaran berhasil diupload! Menunggu verifikasi dari admin.');
+        return redirect()->route('booking')
+            ->with('success', 'Bukti pembayaran berhasil diupload! Menunggu verifikasi admin.');
+    }
+
+    /**
+     * Public booking list
+     */
+    public function publicList()
+    {
+        $approvedBookings = Booking::with(['user', 'room'])
+            ->where('status', 'approved')
+            ->whereDate('tanggal_pinjam', '>=', now())
+            ->orderBy('tanggal_pinjam')
+            ->orderBy('waktu_mulai')
+            ->limit(30)
+            ->get();
+
+        return view('booking.public-list', compact('approvedBookings'));
+    }
+
+    /**
+     * Booking history page
+     */
+    public function history()
+    {
+        return view('admin.booking.history.index', [
+            'title' => 'Riwayat Peminjaman Ruangan',
+            'menuAdminHistory' => 'active',
+        ]);
+    }
+
+    /**
+     * Booking history data (DataTables)
+     */
+    public function historyData(Request $request)
+    {
+        if (Auth::user()->role !== 'admin') {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $query = Booking::with(['user', 'room']);
+
+        // Filters
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+        if ($request->filled('start_date')) {
+            $query->whereDate('tanggal_pinjam', '>=', $request->start_date);
+        }
+        if ($request->filled('end_date')) {
+            $query->whereDate('tanggal_pinjam', '<=', $request->end_date);
+        }
+
+        $query->orderBy('tanggal_pinjam', 'desc')->orderBy('waktu_mulai', 'desc');
+
+        return DataTables::of($query)
+            ->addColumn('time_range', fn($booking) => 
+                Carbon::parse($booking->waktu_mulai)->format('H:i') . ' - ' . 
+                Carbon::parse($booking->waktu_selesai)->format('H:i')
+            )
+            ->addColumn('status_badge', fn($booking) => $this->getStatusBadge($booking->status))
+            ->addColumn('action', fn($booking) => '<span class="text-muted">—</span>')
+            ->addIndexColumn()
+            ->rawColumns(['status_badge', 'action'])
+            ->make(true);
+    }
+
+    // ==================== PRIVATE HELPER METHODS ====================
+
+    /**
+     * Check if schedule has conflict
+     */
+    private function hasScheduleConflict(Request $request): bool
+    {
+        return Booking::where('room_id', $request->room_id)
+            ->where('tanggal_pinjam', $request->tanggal_pinjam)
+            ->whereNotIn('status', ['rejected', 'cancelled'])
+            ->where(function ($query) use ($request) {
+                $query->where('waktu_mulai', '<=', $request->waktu_selesai)
+                    ->where('waktu_selesai', '>=', $request->waktu_mulai);
+            })
+            ->exists();
+    }
+
+    /**
+     * Calculate total amount based on SK No. 411
+     */
+    private function calculateTotalAmount(Room $room, Carbon $tanggal, $user): float
+    {
+        // Step 1: Base price
+        $hargaDasar = $room->harga_sewa_per_hari ?? 0;
+
+        // Step 2: 25% discount for FIK UI (non-external)
+        $diskon = ($user->jenis_pengguna !== 'umum') ? 0.25 : 0;
+        $hargaSetelahDiskon = $hargaDasar * (1 - $diskon);
+
+        // Step 3: Additional fees (Saturday/Sunday)
+        $biayaTambahan = 0;
+        
+        if ($tanggal->isSaturday()) {
+            $biayaTambahan = 100000 + 300000; // Cleaning + Technician
+        } elseif ($tanggal->isSunday()) {
+            $biayaTambahan = 200000 + 300000; // Cleaning + Technician
+        }
+
+        // Step 4: Total
+        return $hargaSetelahDiskon + $biayaTambahan;
+    }
+
+    /**
+     * Generate invoice PDF
+     */
+    private function generateInvoice(Booking $booking): void
+    {
+        $invoiceNumber = 'INV/' . now()->format('Y') . '/' . str_pad($booking->id, 4, '0', STR_PAD_LEFT);
+        
+        $booking->update(['invoice_number' => $invoiceNumber]);
+        $booking->load('room');
+
+        $pdf = Pdf::loadView('booking.pdf.invoice', ['booking' => $booking]);
+        $invoicePath = 'invoices/invoice_' . $booking->id . '_' . time() . '.pdf';
+        
+        Storage::disk('public')->put($invoicePath, $pdf->output());
+        
+        $booking->update(['invoice_path' => $invoicePath]);
+    }
+
+    /**
+     * Check if user can extend booking
+     */
+    private function canExtendBooking(Booking $booking): bool
+    {
+        if (auth()->user()->role === 'admin') {
+            return true;
+        }
+
+        $endTime = Carbon::parse($booking->tanggal_pinjam . ' ' . $booking->waktu_selesai);
+        $deadline = $endTime->addHour();
+
+        return $booking->user_id === auth()->id() && now()->lte($deadline);
+    }
+
+    /**
+     * Get status badge HTML
+     */
+    private function getStatusBadge(string $status): string
+    {
+        $badges = [
+            'pending' => '<span class="badge badge-warning">Pending</span>',
+            'payment_uploaded' => '<span class="badge badge-info">Menunggu Verifikasi</span>',
+            'approved' => '<span class="badge badge-success">Disetujui</span>',
+            'rejected' => '<span class="badge badge-danger">Ditolak</span>',
+            'completed' => '<span class="badge badge-info">Selesai</span>',
+            'cancelled' => '<span class="badge badge-secondary">Dibatalkan</span>',
+        ];
+
+        return $badges[$status] ?? '<span class="badge badge-secondary">Unknown</span>';
     }
 }

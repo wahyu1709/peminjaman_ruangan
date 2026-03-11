@@ -1,6 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\HomeController;
@@ -26,7 +25,9 @@ Route::middleware('isLogin')->group(function(){
 
 // Register
 Route::get('/register', [AuthController::class, 'register'])->name('register');
-Route::post('/register', [AuthController::class, 'registerProses'])->name('registerProses');
+Route::get('/register/step1', [AuthController::class, 'showRegisterStep1'])->name('register.step1');
+Route::get('/register/step2', [AuthController::class, 'showRegisterStep2'])->name('register.step2');
+Route::post('/register', [AuthController::class, 'registerProses'])->name('register.store');
 
 // Forgot Password (tanpa middleware khusus)
 Route::get('/forgot-password', [AuthController::class, 'forgotPasswordForm'])->name('passwordRequest');
@@ -98,7 +99,7 @@ Route::middleware('checkLogin')->group(function(){
     // Perpanjangan booking
     Route::get('/booking/extend/{id}', [BookingController::class, 'extendForm'])->name('booking.extend');
     // Upload bukti pembayaran
-    Route::get('/booking/{id}/upload-proof', [BookingController::class, 'showUploadProof'])->name('booking.upload.proof.show');
+    // Route::get('/booking/{id}/upload-proof', [BookingController::class, 'showUploadProof'])->name('booking.upload.proof.show');
     Route::post('/booking/{id}/upload-proof', [BookingController::class, 'uploadProof'])->name('booking.upload.proof');
 
     // Daftar ruangan untuk user

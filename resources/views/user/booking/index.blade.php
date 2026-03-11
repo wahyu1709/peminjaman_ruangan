@@ -5,6 +5,28 @@
     {{ $title }}
 </h1>
 
+<!-- Alert Success Upload -->
+@if(session('success'))
+<div class="alert alert-success alert-dismissible fade show" role="alert">
+    <i class="fas fa-check-circle mr-2"></i>
+    <strong>Berhasil!</strong> {{ session('success') }}
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+@endif
+
+<!-- Alert Error -->
+@if(session('error'))
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="fas fa-exclamation-triangle mr-2"></i>
+    <strong>Error!</strong> {{ session('error') }}
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+@endif
+
 <div class="card">
     <div class="card-header d-flex flex-wrap justify-content-center justify-content-xl-between">
         <div class="mb-1 mr-2">
@@ -25,7 +47,7 @@
                         <th>Tanggal</th>
                         <th>Jam</th>
                         <th>Keperluan</th>
-                        <th>Invoice</th>
+                        <th>Pembayaran</th>
                         <th>Status</th>
                         <th>
                             <i class="fas fa-cog"></i>
@@ -47,21 +69,64 @@
                         <!-- Kolom INVOICE -->
                         <td class="text-center align-middle">
                             @if($booking->total_amount > 0)
-                                <!-- Booking Berbayar -->
+                                <!-- Ruangan Berbayar -->
+                                <div class="mb-2">
+                                    <strong class="text-primary">Rp {{ number_format($booking->total_amount, 0, ',', '.') }}</strong>
+                                </div>
+                                
+                                <!-- Invoice -->
                                 @if($booking->invoice_path)
                                     <a href="{{ Storage::url($booking->invoice_path) }}" 
                                     target="_blank" 
-                                    class="btn btn-info btn-sm"
-                                    title="Download Invoice">
+                                    class="btn btn-info btn-sm mb-1 d-block">
                                         <i class="fas fa-file-invoice"></i> Invoice
                                     </a>
-                                    <br>
-                                    <small class="text-muted mt-1">Rp {{ number_format($booking->total_amount, 0, ',', '.') }}</small>
                                 @else
-                                    <span class="badge badge-warning">Menunggu</span>
+                                    <span class="badge badge-warning mb-1">Invoice Pending</span>
+                                @endif
+                                
+                                <!-- Bukti Pembayaran -->
+                                @if($booking->bukti_pembayaran)
+                                    <!-- Jika sudah upload -->
+                                    @if(pathinfo($booking->bukti_pembayaran, PATHINFO_EXTENSION) == 'pdf')
+                                        <a href="{{ Storage::url($booking->bukti_pembayaran) }}" 
+                                        target="_blank" 
+                                        class="btn btn-success btn-sm d-block">
+                                            <i class="fas fa-file-pdf"></i> Bukti (PDF)
+                                        </a>
+                                    @else
+                                        <button type="button" 
+                                                class="btn btn-success btn-sm d-block" 
+                                                data-toggle="modal" 
+                                                data-target="#proofModal{{ $booking->id }}">
+                                            <i class="fas fa-image"></i> Lihat Bukti
+                                        </button>
+                                    @endif
+                                    
+                                    <!-- Re-upload jika pending/ditolak -->
+                                    @if(in_array($booking->status, ['pending', 'payment_uploaded']) && $booking->user_id === auth()->id())
+                                        <button type="button" 
+                                                class="btn btn-warning btn-sm d-block mt-1" 
+                                                data-toggle="modal" 
+                                                data-target="#uploadModal{{ $booking->id }}">
+                                            <i class="fas fa-sync"></i> Re-upload
+                                        </button>
+                                    @endif
+                                @else
+                                    <!-- Belum upload -->
+                                    @if($booking->status === 'pending' && $booking->user_id === auth()->id())
+                                        <button type="button" 
+                                                class="btn btn-danger btn-sm d-block" 
+                                                data-toggle="modal" 
+                                                data-target="#uploadModal{{ $booking->id }}">
+                                            <i class="fas fa-upload"></i> Upload Bukti
+                                        </button>
+                                    @else
+                                        <span class="badge badge-danger">Belum Upload</span>
+                                    @endif
                                 @endif
                             @else
-                                <!-- Booking Gratis -->
+                                <!-- Ruangan Gratis -->
                                 <span class="text-muted">Gratis</span>
                             @endif
                         </td>
@@ -132,6 +197,192 @@
                     @endforeach
                 </tbody>
             </table>
+
+            @foreach ($bookings as $booking)
+                <!-- Modal Upload Bukti Pembayaran -->
+                @if($booking->total_amount > 0 && $booking->user_id === auth()->id())
+                <div class="modal fade" id="uploadModal{{ $booking->id }}" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header bg-success text-white">
+                                <h5 class="modal-title">
+                                    <i class="fas fa-upload mr-2"></i>
+                                    Upload Bukti Pembayaran
+                                </h5>
+                                <button type="button" class="close text-white" data-dismiss="modal">
+                                    <span>&times;</span>
+                                </button>
+                            </div>
+                            <form action="{{ route('booking.upload.proof', $booking->id) }}" 
+                                method="POST" 
+                                enctype="multipart/form-data">
+                                @csrf
+                                <div class="modal-body">
+                                    <!-- Detail Booking -->
+                                    <div class="alert alert-info">
+                                        <strong><i class="fas fa-info-circle mr-2"></i>Detail Peminjaman</strong>
+                                        <hr>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <p class="mb-1"><strong>Ruangan:</strong> {{ $booking->room->kode_ruangan }} - {{ $booking->room->nama_ruangan }}</p>
+                                                <p class="mb-1"><strong>Tanggal:</strong> {{ \Carbon\Carbon::parse($booking->tanggal_pinjam)->isoFormat('D MMMM YYYY') }}</p>
+                                                <p class="mb-0"><strong>Waktu:</strong> {{ \Carbon\Carbon::parse($booking->waktu_mulai)->format('H:i') }} - {{ \Carbon\Carbon::parse($booking->waktu_selesai)->format('H:i') }}</p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <p class="mb-0"><strong>Total Pembayaran:</strong></p>
+                                                <h4 class="text-success mb-0">Rp {{ number_format($booking->total_amount, 0, ',', '.') }}</h4>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Info Rekening -->
+                                    <div class="alert alert-warning">
+                                        <strong><i class="fas fa-university mr-2"></i>Informasi Transfer</strong>
+                                        <hr>
+                                        <p class="mb-1"><strong>Bank:</strong> BNI Cabang Kampus UI Depok</p>
+                                        <p class="mb-1"><strong>No. Rekening:</strong> 1273000535</p>
+                                        <p class="mb-0"><strong>Atas Nama:</strong> Universitas Indonesia FIK Non Biaya Pendidikan</p>
+                                    </div>
+
+                                    <!-- Bukti Lama (jika re-upload) -->
+                                    @if($booking->bukti_pembayaran)
+                                    <div class="alert alert-secondary">
+                                        <strong><i class="fas fa-history mr-2"></i>Bukti Sebelumnya:</strong>
+                                        <div class="mt-2">
+                                            @if(pathinfo($booking->bukti_pembayaran, PATHINFO_EXTENSION) == 'pdf')
+                                                <a href="{{ Storage::url($booking->bukti_pembayaran) }}" 
+                                                target="_blank" 
+                                                class="btn btn-sm btn-secondary">
+                                                    <i class="fas fa-file-pdf"></i> Lihat PDF Lama
+                                                </a>
+                                            @else
+                                                <img src="{{ Storage::url($booking->bukti_pembayaran) }}" 
+                                                    class="img-thumbnail" 
+                                                    style="max-height: 150px;">
+                                            @endif
+                                        </div>
+                                    </div>
+                                    @endif
+
+                                    <!-- Upload Field -->
+                                    <div class="form-group">
+                                        <label class="font-weight-bold">
+                                            Upload Bukti Transfer <span class="text-danger">*</span>
+                                        </label>
+                                        <input type="file" 
+                                            name="bukti_pembayaran" 
+                                            class="form-control-file @error('bukti_pembayaran') is-invalid @enderror" 
+                                            accept="image/*,.pdf"
+                                            id="fileInput{{ $booking->id }}"
+                                            required>
+                                        @error('bukti_pembayaran')
+                                            <small class="text-danger">{{ $message }}</small>
+                                        @enderror
+                                        <small class="text-muted d-block mt-1">
+                                            Format: JPG, PNG, PDF (Maksimal 5MB)
+                                        </small>
+                                    </div>
+
+                                    <!-- Preview Image -->
+                                    <div id="imagePreview{{ $booking->id }}" class="mt-3" style="display:none;">
+                                        <p class="font-weight-bold">Preview:</p>
+                                        <img id="preview{{ $booking->id }}" 
+                                            src="" 
+                                            class="img-fluid rounded border" 
+                                            style="max-height: 300px;">
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-check mr-1"></i> Upload Bukti
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Script Preview Image -->
+                <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    const input{{ $booking->id }} = document.getElementById('fileInput{{ $booking->id }}');
+                    const preview{{ $booking->id }} = document.getElementById('preview{{ $booking->id }}');
+                    const previewContainer{{ $booking->id }} = document.getElementById('imagePreview{{ $booking->id }}');
+
+                    if (input{{ $booking->id }}) {
+                        input{{ $booking->id }}.addEventListener('change', function(e) {
+                            const file = e.target.files[0];
+                            if (file && file.type.startsWith('image/')) {
+                                const reader = new FileReader();
+                                reader.onload = function(e) {
+                                    preview{{ $booking->id }}.src = e.target.result;
+                                    previewContainer{{ $booking->id }}.style.display = 'block';
+                                }
+                                reader.readAsDataURL(file);
+                            } else {
+                                previewContainer{{ $booking->id }}.style.display = 'none';
+                            }
+                        });
+                    }
+                });
+                </script>
+                @endif
+
+                <!-- Modal Preview Bukti (untuk gambar) -->
+                @if($booking->bukti_pembayaran && !in_array(pathinfo($booking->bukti_pembayaran, PATHINFO_EXTENSION), ['pdf']))
+                <div class="modal fade" id="proofModal{{ $booking->id }}" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header bg-success text-white">
+                                <h5 class="modal-title">
+                                    <i class="fas fa-image mr-2"></i>
+                                    Bukti Pembayaran - {{ $booking->user->name }}
+                                </h5>
+                                <button type="button" class="close text-white" data-dismiss="modal">
+                                    <span>&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body text-center">
+                                <img src="{{ Storage::url($booking->bukti_pembayaran) }}" 
+                                    alt="Bukti Pembayaran" 
+                                    class="img-fluid">
+                                
+                                <div class="mt-3">
+                                    <p><strong>Ruangan:</strong> {{ $booking->room->kode_ruangan }}</p>
+                                    <p><strong>Total:</strong> Rp {{ number_format($booking->total_amount, 0, ',', '.') }}</p>
+                                    <p><strong>Status:</strong> 
+                                        @if($booking->status === 'payment_uploaded')
+                                            <span class="badge badge-warning">Menunggu Verifikasi</span>
+                                        @elseif($booking->status === 'approved')
+                                            <span class="badge badge-success">Terverifikasi</span>
+                                        @else
+                                            <span class="badge badge-secondary">{{ ucfirst($booking->status) }}</span>
+                                        @endif
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+                                <a href="{{ Storage::url($booking->bukti_pembayaran) }}" 
+                                target="_blank" 
+                                class="btn btn-primary">
+                                    <i class="fas fa-external-link-alt mr-1"></i> Buka di Tab Baru
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                @endif
+
+                <!-- Modal lainnya (Alasan Penolakan, Komentar Admin, Cancel) tetap sama seperti sebelumnya -->
+                @if($booking->status == 'rejected' && $booking->rejected_reason)
+                    {{-- Modal Alasan Penolakan (kode existing Anda) --}}
+                @endif
+                
+                {{-- dst... modal lainnya --}}
+            @endforeach
+
             <!-- Modal Alasan Penolakan -->
             @foreach ($bookings as $booking)
                 @if($booking->status == 'rejected' && $booking->rejected_reason)

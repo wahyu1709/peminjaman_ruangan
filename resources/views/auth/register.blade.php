@@ -2,7 +2,6 @@
 <html lang="en">
 
 <head>
-
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
@@ -11,155 +10,73 @@
 
     <title>Pinjam | Registrasi</title>
 
-    <!-- Custom fonts for this template-->
+    <!-- Custom fonts -->
     <link href="{{ asset('enno/assets/img/ui-icon.png') }}" rel="icon">
     <link href="{{ asset('sbadmin2/vendor/fontawesome-free/css/all.min.css') }}" rel="stylesheet" type="text/css">
-    <link
-        href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
 
-    <!-- Custom styles for this template-->
+    <!-- Custom styles -->
     <link href="{{ asset('sbadmin2/css/sb-admin-2.min.css') }}" rel="stylesheet">
-
 </head>
 
 <body class="bg-gradient-primary">
 
-    <div class="container">
-
-        <!-- Outer Row -->
+    <div class="container mt-5">
         <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <div class="card shadow-sm border-0 rounded-3">
+                    <div class="card-body text-center p-5">
+                        <h2 class="mb-2">Daftar Akun</h2>
+                        <p class="text-muted mb-4">Pilih jenis pengguna untuk melanjutkan</p>
 
-            <div class="col-xl-6 col-lg-7 col-md-9">
-
-                <div class="card o-hidden border-0 shadow-lg my-5">
-                    <div class="card-body p-0">
-                        <!-- Nested Row within Card Body -->
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="p-5">
-                                    <div class="text-center">
-                                        <h1 class="h4 text-gray-900 mb-4">Registrasi Akun</h1>
-                                    </div>
-
-                                    <form class="user" method="POST" action="{{ route('registerProses') }}">
-                                        @csrf
-
-                                        <div class="form-group">
-                                            <input type="text" class="form-control form-control-user @error('name') is-invalid @enderror"
-                                                placeholder="Masukkan Nama anda..." name="name" value="{{ old('name') }}">
-                                            @error('name')
-                                                <small class="text-danger">
-                                                    {{ $message }}
-                                                </small>
-                                            @enderror
-                                        </div>
-
-                                        <div class="form-group">
-                                            <input type="email" class="form-control form-control-user @error('email') is-invalid @enderror"
-                                                id="exampleInputEmail" aria-describedby="emailHelp"
-                                                placeholder="Masukkan Email anda..." name="email" value="{{ old('email') }}">
-                                            @error('email')
-                                                <small class="text-danger">
-                                                    {{ $message }}
-                                                </small>
-                                            @enderror
-                                        </div>
-
-                                        <div class="form-group">
-                                            <input type="number" class="form-control form-control-user @error('nim_nip') is-invalid @enderror"
-                                                placeholder="Masukkan NIM/NIP anda..." name="nim_nip" value="{{ old('nim_nip') }}">
-                                            @error('nim_nip')
-                                                <small class="text-danger">
-                                                    {{ $message }}
-                                                </small>
-                                            @enderror
-                                        </div>
-
-                                        <div class="form-group">
-                                            <select name="jenis_pengguna" class="form-control @error('jenis_pengguna') is-invalid @enderror">
-                                                <option value="" selected disabled>--Pilih Pengguna--</option>
-                                                <option value="mahasiswa">Mahasiswa</option>
-                                                <option value="staff">Staff</option>
-                                                <option value="dosen">Dosen</option>
-                                                <option value="umum">Umum</option>
-                                            </select>
-                                        </div>
-
-                                        <div class="form-group row">
-                                            <div class="col-sm-6 mb-3 mb-sm-0">
-                                                <input type="password" class="form-control form-control-user @error('password') is-invalid @enderror"
-                                                    id="exampleInputPassword" placeholder="Password" name="password">
-                                                @error('password')
-                                                    <small class="text-danger">
-                                                        {{ $message }}
-                                                    </small>
-                                                @enderror
-                                            </div>
-                                            <div class="col-sm-6">
-                                                <input type="password" class="form-control form-control-user @error('password') is-invalid @enderror" name="password_confirmation"
-                                                    id="exampleRepeatPassword" placeholder="Repeat Password">
-                                            </div>
-                                        </div>
-
-                                        <button type="submit" class="btn btn-primary btn-user btn-block">
-                                            Register
-                                        </button>
-                                    </form>
-
-                                    <hr>
-                                    <div class="text-center">
-                                        <a class="small" href="{{ route('passwordRequest') }}">Lupa Password?</a>
-                                    </div>
-                                    <div class="text-center">
-                                        <small>
-                                            Sudah punya akun? <a href="{{ route('login') }}">Klik Disini</a>
-                                        </small>
-                                    </div>
-                                </div>
+                        <!-- Civitas FIK UI -->
+                        <a href="{{ route('register.step1') }}" 
+                           class="btn btn-outline-primary w-100 mb-3 py-3 text-start d-flex align-items-start">
+                            <i class="fas fa-user-graduate me-3 fs-4"></i>
+                            <div>
+                                <strong>Civitas Akademika FIK UI</strong><br>
+                                <small>Mahasiswa, Staff, atau Dosen FIK UI</small>
                             </div>
-                        </div>
+                        </a>
+
+                        <!-- Pihak Eksternal -->
+                        <a href="{{ route('register.step2') }}" 
+                           class="btn btn-outline-secondary w-100 py-3 text-start d-flex align-items-start">
+                            <i class="fas fa-users me-3 fs-4"></i>
+                            <div>
+                                <strong>Pihak Eksternal</strong><br>
+                                <small>Non-FIK UI (Instansi, Perusahaan, dll)</small>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="text-center">
+                        <small>
+                            Sudah punya akun? <a href="{{ route('login') }}">Klik Disini</a>
+                        </small>
                     </div>
                 </div>
-
             </div>
-
         </div>
-
     </div>
 
-    <!-- Bootstrap core JavaScript-->
+    <!-- Scripts -->
     <script src="{{ asset('sbadmin2/vendor/jquery/jquery.min.js') }}"></script>
     <script src="{{ asset('sbadmin2/vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
-
-    <!-- Core plugin JavaScript-->
     <script src="{{ asset('sbadmin2/vendor/jquery-easing/jquery.easing.min.js') }}"></script>
-
-    <!-- Custom scripts for all pages-->
     <script src="{{ asset('sbadmin2/js/sb-admin-2.min.js') }}"></script>
-
     <script src="{{ asset('sweetalert2/dist/sweetalert2.all.min.js') }}"></script>
 
     @session('success')
         <script>
-            Swal.fire({
-                title: "Sukses",
-                text: "{{ session('success') }}",
-                icon: "success"
-            });
+            Swal.fire({ title: "Sukses", text: "{{ session('success') }}", icon: "success" });
         </script>
     @endsession
 
     @session('error')
         <script>
-            Swal.fire({
-                title: "Gagal",
-                text: "{{ session('error') }}",
-                icon: "error"
-            });
+            Swal.fire({ title: "Gagal", text: "{{ session('error') }}", icon: "error" });
         </script>
     @endsession
-
 
 </body>
 

@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->enum('role', ['admin', 'user'])->default('user');
-            $table->enum('jenis_pengguna', ['mahasiswa', 'dosen', 'staff']);
+            $table->enum('jenis_pengguna', ['mahasiswa', 'dosen', 'staff', 'umum']);
             $table->string('nim_nip');
             $table->string('email');
             $table->string('password');

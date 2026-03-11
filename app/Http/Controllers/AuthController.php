@@ -12,96 +12,131 @@ use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
-    public function login(){
-        return view('auth/login');
+    public function login()
+    {
+        return view('auth.login');
     }
 
-    public function loginProses(Request $request){
+    public function loginProses(Request $request)
+    {
         $request->validate([
-            'email' => 'required',
+            'email' => 'required|email',
             'password' => 'required|min:6'
-        ],[
-            'email.required' => 'email wajib diisi',
-            'password.required' => 'password wajib diisi',
-            'password.min' => 'password Minimal 6 Karakter'
+        ], [
+            'email.required' => 'Email wajib diisi',
+            'password.required' => 'Password wajib diisi',
+            'password.min' => 'Password minimal 6 karakter'
         ]);
 
-        $data = array(
+        $credentials = [
             'email' => $request->email,
             'password' => $request->password
-        );
+        ];
 
-        if(Auth::attempt($data)){
+        if (Auth::attempt($credentials)) {
             return redirect()->route('dashboard');
-        }else{
+        } else {
             return redirect()->back()->with('error', 'Email atau Password salah!');
         }
     }
 
-    public function register(){
-        return view('auth/register');
+    // Langkah 1: Pilih jenis pengguna
+    public function register()
+    {
+        return view('auth.register'); // register.blade.php
     }
 
-    public function registerProses(Request $request){
-        $request->validate([
-            'name' => 'required',
-            'email' => ['required', 'email', 'unique:users,email', function($attribute, $value, $fail){
-                $allowedDomains = ['gmail.com', 'yahoo.com', 'outlook.com', 'mail.com', 'ui.ac.id'];
-                $domain = strtolower(substr(strrchr($value, "@"), 1));
+    // Langkah 2A: Form Civitas FIK UI
+    public function showRegisterStep1()
+    {
+        return view('auth.register-step1');
+    }
 
-                if(!in_array($domain, $allowedDomains)){
-                    $fail('Email anda tidak valid. Gunakan email dengan domain: ' . implode(', ', $allowedDomains));
-                }
-            }],
-            'nim_nip' => 'required|unique:users,nim_nip',
-            'jenis_pengguna' => 'required',
-            'password' => 'required|min:6|confirmed'
-        ],[
+    // Langkah 2B: Form Pihak Eksternal
+    public function showRegisterStep2()
+    {
+        return view('auth.register-step2');
+    }
+
+    // Proses registrasi
+    public function registerProses(Request $request)
+    {
+        // Validasi umum
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|min:6|confirmed',
+            'jenis_pengguna' => 'required|in:mahasiswa,staff,dosen,umum',
+        ], [
             'name.required' => 'Nama wajib diisi',
             'email.required' => 'Email wajib diisi',
             'email.email' => 'Format email tidak valid',
             'email.unique' => 'Email sudah terdaftar',
-            'nim_nip.required' => 'NIM/NIP wajib diisi',
-            'nim_nip.unique' => 'NIM/NIP sudah terdaftar',
-            'jenis_pengguna.required' => 'Jenis Pengguna wajib diisi',
             'password.required' => 'Password wajib diisi',
-            'password.min' => 'Password Minimal 6 Karakter',
-            'password.confirmed' => 'Konfirmasi Password tidak sesuai'
+            'password.min' => 'Password minimal 6 karakter',
+            'password.confirmed' => 'Konfirmasi password tidak sesuai',
+            'jenis_pengguna.required' => 'Jenis pengguna wajib dipilih',
         ]);
 
+        // Validasi khusus berdasarkan jenis pengguna
+        if ($request->jenis_pengguna !== 'umum') {
+            // Civitas FIK UI
+            $request->validate([
+                'nim_nip' => 'required|string|max:50|unique:users,nim_nip',
+            ], [
+                'nim_nip.required' => 'NIM/NIP wajib diisi',
+                'nim_nip.unique' => 'NIM/NIP sudah terdaftar',
+            ]);
+        } else {
+            // Pihak Eksternal
+            $request->validate([
+                'instansi' => 'required|string|max:255',
+                'phone' => 'required|regex:/^[\+]?[0-9]{10,13}$/',
+            ], [
+                'instansi.required' => 'Instansi wajib diisi',
+                'phone.required' => 'No. HP wajib diisi',
+                'phone.regex' => 'Format No. HP tidak valid (contoh: +6281234567890)',
+            ]);
+        }
+
+        // Buat user
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'jenis_pengguna' => $request->jenis_pengguna,
-            'nim_nip' => $request->nim_nip,
             'password' => Hash::make($request->password),
+            'role' => 'user',
+            'jenis_pengguna' => $request->jenis_pengguna,
+            'nim_nip' => $request->filled('nim_nip') ? $request->nim_nip : null,
+            'instansi' => $request->filled('instansi') ? $request->instansi : null,
+            'phone' => $request->filled('phone') ? $request->phone : null,
         ]);
 
         Auth::login($user);
 
-        return redirect()->route('login')->with('success', 'Registrasi berhasil');
+        return redirect()->route('dashboard')->with('success', 'Registrasi berhasil! Selamat datang di sistem peminjaman ruangan FIK UI.');
     }
 
-    public function logout(){
+    public function logout()
+    {
         Auth::logout();
         return redirect()->route('login');
     }
 
+    // Forgot Password
     public function forgotPasswordForm()
     {
         return view('auth.forgot-password');
     }
 
-    public function sendResetLinkEmail(Request $request){
+    public function sendResetLinkEmail(Request $request)
+    {
         $request->validate(['email' => 'required|email']);
 
-        $status = Password::sendResetLink(
-            $request->only('email')
-        );
+        $status = Password::sendResetLink($request->only('email'));
 
         return $status === Password::RESET_LINK_SENT
-                    ? back()->with('status', __($status))
-                    : back()->withErrors(['email' => __($status)]);
+            ? back()->with('status', __($status))
+            : back()->withErrors(['email' => __($status)]);
     }
 
     public function resetPasswordForm(Request $request)
