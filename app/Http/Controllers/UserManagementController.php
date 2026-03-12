@@ -10,7 +10,7 @@ use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Validation\Rule;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel;
-use App\Exports\UsersExport; // Nanti buat ini
+use App\Exports\UsersExport;
 
 class UserManagementController extends Controller
 {
@@ -62,6 +62,7 @@ class UserManagementController extends Controller
                             data-name="'.e($user->name).'"
                             data-email="'.e($user->email).'"
                             data-nim_nip="'.e($user->nim_nip).'"
+                            data-phone="'.e($user->phone).'"
                             data-jenis="'.$user->jenis_pengguna.'">
                         <i class="fas fa-edit"></i>
                     </button>
@@ -83,6 +84,7 @@ class UserManagementController extends Controller
             'password' => 'required|min:6|confirmed',
             'jenis_pengguna' => 'required|in:mahasiswa,dosen,staff,umum',
             'nim_nip' => 'nullable|string|max:50|unique:users,nim_nip',
+            'phone' => 'required|regex:/^[\+]?[0-9]{10,13}$/',
         ], [
             'name.required' => 'Nama tidak boleh kosong',
             'email.required' => 'Email tidak boleh kosong',
@@ -92,6 +94,7 @@ class UserManagementController extends Controller
             'password.confirmed' => 'Konfirmasi password tidak cocok',
             'jenis_pengguna.required' => 'Jenis pengguna harus dipilih',
             'nim_nip.unique' => 'NIM/NIP sudah terdaftar',
+            'phone.required' => 'No. HP wajib diisi',
         ]);
 
         User::create([
@@ -101,6 +104,7 @@ class UserManagementController extends Controller
             'role' => 'user',
             'jenis_pengguna' => $request->jenis_pengguna,
             'nim_nip' => $request->nim_nip,
+            'phone' => $request->phone,
         ]);
 
         return response()->json(['success' => true, 'message' => 'Pengguna berhasil ditambahkan']);
@@ -115,10 +119,13 @@ class UserManagementController extends Controller
             'email' => ['required', 'email', Rule::unique('users', 'email')->ignore($id)],
             'jenis_pengguna' => 'required|in:mahasiswa,dosen,staff,umum',
             'nim_nip' => ['nullable', 'string', 'max:50', Rule::unique('users', 'nim_nip')->ignore($id)],
+            'phone' => 'required|regex:/^[\+]?[0-9]{10,13}$/',
             'password' => 'nullable|min:6|confirmed',
         ], [
             'name.required' => 'Nama tidak boleh kosong',
             'email.unique' => 'Email sudah terdaftar',
+            'phone.required' => 'No. HP wajib diisi',
+            'phone.regex' => 'Format No. HP tidak valid',
             'password.min' => 'Password minimal 6 karakter',
             'password.confirmed' => 'Konfirmasi password tidak cocok',
             'nim_nip.unique' => 'NIM/NIP sudah terdaftar',
@@ -129,6 +136,7 @@ class UserManagementController extends Controller
             'email' => $request->email,
             'jenis_pengguna' => $request->jenis_pengguna,
             'nim_nip' => $request->nim_nip,
+            'phone' => $request->phone,
         ]);
 
         // Update password jika diisi

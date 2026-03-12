@@ -59,6 +59,17 @@
                                 @enderror
                             </div>
 
+                            <div class="form-group mb-3">
+                                <label for="phone" class="form-label">No. HP <span class="text-danger">*</span></label>
+                                <input type="tel" id="phone" name="phone" class="form-control" value="{{ old('phone') }}" required>
+                                <small class="form-text text-muted">
+                                    Format: 081234567890
+                                </small>
+                                @error('phone')
+                                    <small class="text-danger">{{ $message }}</small>
+                                @enderror
+                            </div>
+
                             <div class="form-group mb-4">
                                 <label class="form-label">Jenis Pengguna <span class="text-danger">*</span></label>
                                 <select name="jenis_pengguna" class="form-control" required>

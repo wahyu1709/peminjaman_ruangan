@@ -67,6 +67,7 @@ class AuthController extends Controller
             'email' => 'required|email|unique:users,email',
             'password' => 'required|min:6|confirmed',
             'jenis_pengguna' => 'required|in:mahasiswa,staff,dosen,umum',
+            'phone' => 'required|regex:/^[\+]?[0-9]{10,13}$/',
         ], [
             'name.required' => 'Nama wajib diisi',
             'email.required' => 'Email wajib diisi',
@@ -76,6 +77,8 @@ class AuthController extends Controller
             'password.min' => 'Password minimal 6 karakter',
             'password.confirmed' => 'Konfirmasi password tidak sesuai',
             'jenis_pengguna.required' => 'Jenis pengguna wajib dipilih',
+            'phone.required' => 'No. HP wajib diisi',
+            'phone.regex' => 'Format nomor HP tidak valid (contoh: 081234567890 atau +6281234567890)',
         ]);
 
         // Validasi khusus berdasarkan jenis pengguna
@@ -91,11 +94,10 @@ class AuthController extends Controller
             // Pihak Eksternal
             $request->validate([
                 'instansi' => 'required|string|max:255',
-                'phone' => 'required|regex:/^[\+]?[0-9]{10,13}$/',
+                
             ], [
                 'instansi.required' => 'Instansi wajib diisi',
-                'phone.required' => 'No. HP wajib diisi',
-                'phone.regex' => 'Format No. HP tidak valid (contoh: +6281234567890)',
+                
             ]);
         }
 

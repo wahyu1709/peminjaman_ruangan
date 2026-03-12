@@ -43,6 +43,7 @@
                     <tr>
                         <th>No</th>
                         <th>Pengaju</th>
+                        <th>No. HP</th>
                         <th>Ruangan</th>
                         <th>Tanggal</th>
                         <th>Jam</th>
@@ -61,6 +62,38 @@
                         <td class="text-center">{{ $loop->iteration }}</td>
                         <td>{{ $booking->user->name }} <br>
                             <small class="text-muted">({{ $booking->user->jenis_pengguna }})</small>
+                        </td>
+                        <!-- KOLOM BARU: No. HP (kolom ke-3) -->
+                        <td class="text-center align-middle">
+                            @if($booking->user->phone)
+                                @php
+                                    // Bersihkan nomor dari karakter non-digit
+                                    $cleanPhone = preg_replace('/[^0-9]/', '', $booking->user->phone);
+                                    
+                                    // Konversi ke format internasional (62)
+                                    if (Str::startsWith($cleanPhone, '0')) {
+                                        $cleanPhone = '62' . substr($cleanPhone, 1);
+                                    } elseif (Str::startsWith($cleanPhone, '+62')) {
+                                        $cleanPhone = '62' . substr($cleanPhone, 3);
+                                    } elseif (!Str::startsWith($cleanPhone, '62') && strlen($cleanPhone) >= 10) {
+                                        // Jika tidak ada kode negara dan panjang >= 10 digit
+                                        $cleanPhone = '62' . $cleanPhone;
+                                    }
+                                @endphp
+                                
+                                <a href="https://wa.me/{{ $cleanPhone }}?text=Halo%20{{ urlencode($booking->user->name) }},%20saya%20dari%20admin%20FIK%20UI.%20Tentang%20peminjaman%20ruangan%20{{ $booking->room->kode_ruangan }}%20tanggal%20{{ $booking->tanggal_pinjam }}..." 
+                                target="_blank" 
+                                class="btn btn-success btn-sm d-inline-flex align-items-center"
+                                title="Chat {{ $booking->user->name }} via WhatsApp">
+                                    <i class="fab fa-whatsapp mr-1"></i>
+                                    <span class="d-none d-md-inline">
+                                        Klik untuk WhatsApp
+                                    </span>
+                                </a>
+                                
+                            @else
+                                <span class="badge badge-secondary" data-toggle="tooltip" title="Nomor HP belum diisi oleh pengguna">Tidak Ada</span>
+                            @endif
                         </td>
                         <td>{{ $booking->room->kode_ruangan }}</td>
                         <td>{{ $booking->tanggal_pinjam }}</td>

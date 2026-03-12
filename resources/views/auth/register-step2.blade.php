@@ -60,7 +60,10 @@
 
                             <div class="form-group mb-3">
                                 <label for="phone" class="form-label">No. HP <span class="text-danger">*</span></label>
-                                <input type="tel" id="phone" name="phone" class="form-control" placeholder="+6281234567890" value="{{ old('phone') }}" required>
+                                <input type="tel" id="phone" name="phone" class="form-control" value="{{ old('phone') }}" required>
+                                <small class="form-text text-muted">
+                                    Format: 081234567890
+                                </small>
                                 @error('phone')
                                     <small class="text-danger">{{ $message }}</small>
                                 @enderror

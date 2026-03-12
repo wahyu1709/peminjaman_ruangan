@@ -68,6 +68,7 @@
                         <th>Nama</th>
                         <th>Email</th>
                         <th>NIM/NIP</th>
+                        <th>No. HP</th>
                         <th width="12%">Jenis</th>
                         <th width="15%">Aksi</th>
                     </tr>
@@ -100,17 +101,16 @@
                         <input type="text" name="name" class="form-control" required>
                     </div>
                     <div class="form-group">
+                        <label>NIM/NIP <span class="text-muted">(Opsional)</span></label>
+                        <input type="text" name="nim_nip" class="form-control">
+                    </div>
+                    <div class="form-group">
                         <label>Email <span class="text-danger">*</span></label>
                         <input type="email" name="email" class="form-control" required>
                     </div>
                     <div class="form-group">
-                        <label>Password <span class="text-danger">*</span></label>
-                        <input type="password" name="password" class="form-control" required minlength="6">
-                        <small class="text-muted">Minimal 6 karakter</small>
-                    </div>
-                    <div class="form-group">
-                        <label>Konfirmasi Password <span class="text-danger">*</span></label>
-                        <input type="password" name="password_confirmation" class="form-control" required minlength="6">
+                        <label>No. HP <span class="text-danger">*</span></label>
+                        <input type="text" name="phone" class="form-control" required>
                     </div>
                     <div class="form-group">
                         <label>Jenis Pengguna <span class="text-danger">*</span></label>
@@ -123,9 +123,14 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>NIM/NIP <span class="text-muted">(Opsional)</span></label>
-                        <input type="text" name="nim_nip" class="form-control">
+                        <label>Password <span class="text-danger">*</span></label>
+                        <input type="password" name="password" class="form-control" required minlength="6">
+                        <small class="text-muted">Minimal 6 karakter</small>
                     </div>
+                    <div class="form-group">
+                        <label>Konfirmasi Password <span class="text-danger">*</span></label>
+                        <input type="password" name="password_confirmation" class="form-control" required minlength="6">
+                    </div>    
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
@@ -160,16 +165,16 @@
                         <input type="text" name="name" id="edit_name" class="form-control" required>
                     </div>
                     <div class="form-group">
+                        <label>NIM/NIP</label>
+                        <input type="text" name="nim_nip" id="edit_nim_nip" class="form-control">
+                    </div>
+                    <div class="form-group">
                         <label>Email <span class="text-danger">*</span></label>
                         <input type="email" name="email" id="edit_email" class="form-control" required>
                     </div>
                     <div class="form-group">
-                        <label>Password <span class="text-muted">(Kosongkan jika tidak diubah)</span></label>
-                        <input type="password" name="password" class="form-control" minlength="6">
-                    </div>
-                    <div class="form-group">
-                        <label>Konfirmasi Password</label>
-                        <input type="password" name="password_confirmation" class="form-control" minlength="6">
+                        <label>No. HP <span class="text-danger">*</span></label>
+                        <input type="tel" name="phone" id="edit_phone" class="form-control" required>
                     </div>
                     <div class="form-group">
                         <label>Jenis Pengguna <span class="text-danger">*</span></label>
@@ -179,11 +184,15 @@
                             <option value="staff">Staff</option>
                             <option value="umum">Umum</option>
                         </select>
+                    </div>   
+                    <div class="form-group">
+                        <label>Password <span class="text-muted">(Kosongkan jika tidak diubah)</span></label>
+                        <input type="password" name="password" class="form-control" minlength="6">
                     </div>
                     <div class="form-group">
-                        <label>NIM/NIP</label>
-                        <input type="text" name="nim_nip" id="edit_nim_nip" class="form-control">
-                    </div>
+                        <label>Konfirmasi Password</label>
+                        <input type="password" name="password_confirmation" class="form-control" minlength="6">
+                    </div>    
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
@@ -218,6 +227,7 @@ $(document).ready(function() {
             { data: 'name', name: 'name' },
             { data: 'email', name: 'email' },
             { data: 'nim_nip', name: 'nim_nip', defaultContent: '-' },
+            { data: 'phone', name: 'phone'},
             { data: 'jenis_badge', name: 'jenis_badge', orderable: false },
             { data: 'action', name: 'action', orderable: false, searchable: false },
         ],
@@ -315,6 +325,7 @@ $(document).ready(function() {
         $('#edit_name').val(data.name);
         $('#edit_email').val(data.email);
         $('#edit_nim_nip').val(data.nim_nip);
+        $('#edit_phone').val(data.phone);
         $('#edit_jenis').val(data.jenis);
         $('#editUserModal').modal('show');
     });
