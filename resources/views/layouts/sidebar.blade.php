@@ -66,6 +66,14 @@
                     </a>
                 </li>
 
+                <!-- Menu Inventaris -->
+                <li class="nav-item {{ $menuAdminInventory ?? '' }}">
+                    <a class="nav-link" href="{{ route('inventory.index') }}">
+                        <i class="fas fa-boxes"></i>
+                        <span>Manajemen Inventaris</span>
+                    </a>
+                </li>
+
                 <!-- Divider -->
                 <hr class="sidebar-divider d-none d-md-block">
             @else

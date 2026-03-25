@@ -93,12 +93,12 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         },
         columns: [
-            { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
-            { data: 'user.name', name: 'user.name' },
-            { data: 'room.kode_ruangan', name: 'room.kode_ruangan' },
+            { data: 'DT_RowIndex',  name: 'DT_RowIndex', orderable: false, searchable: false },
+            { data: 'user.name',    name: 'user.name' },
+            { data: 'ruangan',      name: 'ruangan', orderable: false },  // ✅ diganti
             { data: 'tanggal_pinjam', name: 'tanggal_pinjam' },
-            { data: 'time_range', name: 'time_range' },
-            { data: 'keperluan', name: 'keperluan' },
+            { data: 'time_range',   name: 'time_range', orderable: false },
+            { data: 'keperluan',    name: 'keperluan' },
             { data: 'status_badge', name: 'status_badge', orderable: false, searchable: false },
         ],
         pageLength: 10,

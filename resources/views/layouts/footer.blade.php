@@ -7,6 +7,7 @@
     <script src="{{ asset('sbadmin2/vendor/datatables/dataTables.bootstrap4.min.js') }}"></script>
     <script src="{{ asset('sbadmin2/js/demo/datatables-demo.js') }}"></script>
     <script src="{{ asset('sweetalert2/dist/sweetalert2.all.min.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     @session('success')
         <script>

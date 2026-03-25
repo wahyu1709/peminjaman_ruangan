@@ -50,4 +50,16 @@ class User extends Authenticatable
     public function bookings(){
         return $this->hasMany(Booking::class, 'user_id');
     }
+
+    public function inventoryBookings()
+    {
+        return $this->hasManyThrough(
+            InventoryBooking::class,
+            Booking::class,
+            'user_id',
+            'booking_id',
+            'id',
+            'id'
+        );
+    }
 }

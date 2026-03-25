@@ -1,259 +1,187 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
     <title>Invoice #{{ $booking->invoice_number }}</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        @page {
+            margin: 25mm 15mm;
+            size: A4;
         }
-        
         body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            padding: 30px;
-            font-size: 11px;
+            font-family: 'DejaVu Sans', 'Nunito', sans-serif;
             color: #333;
-            line-height: 1.6;
+            line-height: 1.5;
+            font-size: 12px;
         }
-        
         .container {
             max-width: 800px;
             margin: 0 auto;
-            border: 1px solid #ddd;
-            padding: 0;
         }
-        
-        /* Header */
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            /* color: white; */
-            padding: 25px 30px;
             text-align: center;
+            border-bottom: 3px solid #1a4780;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
         }
-        
+        .header img {
+            height: 60px;
+            margin-bottom: 10px;
+        }
         .header h1 {
-            font-size: 20px;
-            margin-bottom: 8px;
-            letter-spacing: 1px;
+            color: #1a4780;
+            font-size: 24px;
+            margin: 5px 0;
+            font-weight: bold;
         }
-        
-        .header .university {
-            font-size: 13px;
-            font-weight: 600;
+        .header h2 {
+            color: #d62828;
+            font-size: 18px;
+            margin: 5px 0;
+            font-weight: bold;
+        }
+        .header p {
+            margin: 3px 0;
+            font-size: 11px;
+        }
+        .info-box {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 25px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
             margin-bottom: 5px;
         }
-        
-        .header .address {
-            font-size: 9px;
-            opacity: 0.9;
-            line-height: 1.4;
+        .info-label {
+            font-weight: bold;
+            width: 120px;
         }
-        
-        /* Content */
-        .content {
-            padding: 30px;
+        .divider {
+            height: 1px;
+            background: #1a4780;
+            margin: 25px 0;
         }
-        
-        /* Invoice Info */
-        .invoice-info {
-            display: table;
-            width: 100%;
-            margin-bottom: 25px;
-            border-bottom: 2px solid #f0f0f0;
-            padding-bottom: 15px;
-        }
-        
-        .invoice-info-left,
-        .invoice-info-right {
-            display: table-cell;
-            width: 50%;
-            vertical-align: top;
-        }
-        
-        .invoice-info-right {
-            text-align: right;
-        }
-        
-        .invoice-label {
-            font-weight: 600;
-            color: #667eea;
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 3px;
-        }
-        
-        .invoice-value {
-            font-size: 12px;
-            font-weight: 600;
-            color: #333;
-        }
-        
-        /* Section */
-        .section {
-            margin-bottom: 25px;
-        }
-        
-        .section-title {
-            font-size: 12px;
-            font-weight: 700;
-            color: #667eea;
-            margin-bottom: 12px;
-            padding-bottom: 5px;
-            border-bottom: 2px solid #667eea;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        /* Table */
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 10px;
+            margin: 20px 0;
         }
-        
-        table tr {
-            border-bottom: 1px solid #f0f0f0;
-        }
-        
-        table td {
-            padding: 8px 0;
+        th {
+            background-color: #1a4780;
+            color: white;
+            text-align: left;
+            padding: 10px 12px;
+            font-weight: bold;
             font-size: 11px;
         }
-        
-        table td:first-child {
-            color: #666;
-            width: 40%;
-        }
-        
-        table td:last-child {
-            color: #333;
-            font-weight: 500;
-        }
-        
-        /* Breakdown Table */
-        .breakdown-table {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 5px;
-            margin-top: 10px;
-        }
-        
-        .breakdown-table table tr {
-            border: none;
-        }
-        
-        .breakdown-table td {
-            padding: 6px 0;
-        }
-        
-        .breakdown-row-base {
-            color: #333;
-        }
-        
-        .breakdown-row-discount {
-            color: #28a745;
-            font-weight: 600;
-        }
-        
-        .breakdown-row-subtotal {
-            font-weight: 700;
-            border-top: 1px solid #ddd;
-            padding-top: 8px !important;
-        }
-        
-        .breakdown-row-additional {
-            color: #fd7e14;
-            font-weight: 600;
-        }
-        
-        .breakdown-row-total {
-            font-size: 13px;
-            font-weight: 700;
-            color: #667eea;
-            border-top: 2px solid #667eea;
-            padding-top: 10px !important;
-        }
-        
-        /* Bank Info */
-        .bank-info {
-            background: #fff3cd;
-            border-left: 4px solid #ffc107;
-            padding: 15px;
-            border-radius: 5px;
-            margin-top: 25px;
-        }
-        
-        .bank-info h4 {
-            color: #856404;
-            font-size: 12px;
-            margin-bottom: 10px;
-        }
-        
-        .bank-info p {
-            margin: 5px 0;
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e9ecef;
             font-size: 11px;
-            color: #856404;
         }
-        
-        .bank-info strong {
-            color: #664d03;
+        tr:last-child td {
+            border-bottom: none;
         }
-        
-        /* Footer */
-        .footer {
-            margin-top: 30px;
-            padding-top: 15px;
-            border-top: 1px solid #ddd;
-            text-align: center;
-        }
-        
-        .footer-note {
-            font-size: 10px;
-            color: #666;
-            font-style: italic;
-            margin-bottom: 8px;
-        }
-        
-        .footer-stamp {
-            font-size: 9px;
-            color: #999;
-        }
-        
-        /* Badge */
-        .badge {
-            display: inline-block;
-            padding: 3px 8px;
-            border-radius: 3px;
-            font-size: 9px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .badge-success {
-            background: #d4edda;
-            color: #155724;
-        }
-        
-        .badge-warning {
-            background: #fff3cd;
-            color: #856404;
-        }
-        
-        /* Helpers */
         .text-right {
             text-align: right;
         }
-        
-        .text-bold {
-            font-weight: 700;
+        .text-center {
+            text-align: center;
         }
-        
-        .mt-20 {
-            margin-top: 20px;
+        .text-primary {
+            color: #1a4780;
+            font-weight: bold;
+        }
+        .text-success {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .text-danger {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .text-warning {
+            color: #ffc107;
+            font-weight: bold;
+        }
+        .total-row {
+            background-color: #e9ecef;
+            font-weight: bold;
+        }
+        .payment-info {
+            background: #e3f2fd;
+            border-left: 4px solid #1a4780;
+            padding: 15px;
+            margin: 25px 0;
+            border-radius: 0 4px 4px 0;
+        }
+        .payment-info h4 {
+            color: #1a4780;
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        .signature {
+            margin-top: 40px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .signature-box {
+            text-align: center;
+            width: 45%;
+        }
+        .signature-line {
+            border-top: 1px solid #333;
+            margin-top: 40px;
+            padding-top: 5px;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #e9ecef;
+            font-size: 10px;
+            color: #6c757d;
+        }
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        .badge-success {
+            background-color: #28a745;
+            color: white;
+        }
+        .badge-warning {
+            background-color: #ffc107;
+            color: #212529;
+        }
+        .sk-reference {
+            background: #fff8e1;
+            border: 1px solid #ffc107;
+            border-radius: 4px;
+            padding: 12px;
+            margin: 20px 0;
+            font-size: 11px;
+        }
+        .sk-reference p {
+            margin: 5px 0;
+        }
+        @media print {
+            body {
+                -webkit-print-color-adjust: exact;
+            }
+            .no-print {
+                display: none;
+            }
         }
     </style>
 </head>
@@ -261,183 +189,256 @@
     <div class="container">
         <!-- Header -->
         <div class="header">
-            <h1>INVOICE PEMINJAMAN RUANGAN</h1>
-            <p class="university">Fakultas Ilmu Keperawatan Universitas Indonesia</p>
-            <p class="address">
-                Gedung A Lantai 2, RIK, Kampus UI Depok, Jl. Prof. Dr. Bahder Djohan,<br>
-                Pondok Cina, Kec. Beji, Kota Depok, Jawa Barat 16424
-            </p>
+            <h1>Fakultas Ilmu Keperawatan</h1>
+            <h2>Universitas Indonesia</h2>
+            <p>Universitas Indonesia Gedung A Lantai 2, Rumpun Ilmu Kesehatan (RIK)</p>
+            <p>Jl. Prof. Dr. Bahder Djohan, Kampus UI Depok, Pondok Cina, Kecamatan Beji, Kota Depok, Jawa Barat 16424, Indonesia.</p>
+            <p>Email: wd-sdm.fik@ui.ac.id | Website: nursing.ui.ac.id</p>
         </div>
-        
-        <!-- Content -->
-        <div class="content">
-            <!-- Invoice Info -->
-            <div class="invoice-info">
-                <div class="invoice-info-left">
-                    <div class="invoice-label">Nomor Invoice</div>
-                    <div class="invoice-value">{{ $booking->invoice_number }}</div>
-                </div>
-                <div class="invoice-info-right">
-                    <div class="invoice-label">Tanggal Terbit</div>
-                    <div class="invoice-value">{{ \Carbon\Carbon::parse($booking->created_at)->isoFormat('D MMMM YYYY') }}</div>
-                </div>
-            </div>
 
-            <!-- Data Peminjam -->
-            <div class="section">
-                <div class="section-title">Data Peminjam</div>
-                <table>
-                    <tr>
-                        <td>Nama</td>
-                        <td class="text-bold">{{ $booking->user->name }}</td>
-                    </tr>
-                    <tr>
-                        <td>NIM/NIP</td>
-                        <td>{{ $booking->user->nim_nip ?? '-' }}</td>
-                    </tr>
-                    <tr>
-                        <td>Email</td>
-                        <td>{{ $booking->user->email }}</td>
-                    </tr>
-                    <tr>
-                        <td>Jenis Pengguna</td>
-                        <td>
-                            {{ ucfirst($booking->user->jenis_pengguna) }}
-                            @if($booking->user->jenis_pengguna !== 'umum')
-                                <span class="badge badge-success">Civitas FIK UI</span>
-                            @endif
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>Instansi</td>
-                        <td>
-                            @if ($booking->user->jenis_pengguna === 'umum')
-                                {{ $booking->user->instansi ?? '-' }}
-                            @else
-                                FIK UI 
-                            @endif
-                        </td>
-                    </tr>
-                </table>
+        <!-- Invoice Info -->
+        <div class="info-box">
+            <div class="info-row">
+                <span class="info-label">Nomor Invoice:</span>
+                <span class="text-primary">{{ $booking->invoice_number }}</span>
             </div>
+            <div class="info-row">
+                <span class="info-label">Tanggal:</span>
+                <span>{{ \Carbon\Carbon::parse($booking->created_at)->isoFormat('D MMMM YYYY') }}</span>
+            </div>
+        </div>
 
-            <!-- Detail Peminjaman -->
-            <div class="section">
-                <div class="section-title">Detail Peminjaman</div>
-                <table>
+        <!-- SK Reference -->
+        <div class="sk-reference">
+            <p><strong>Dasar Hukum:</strong> Surat Keputusan Dekan FIK UI No. 411/SK/F12.D/UI/2026</p>
+            <p><strong>Tanggal:</strong> 10 Februari 2026</p>
+            <p><strong>Tentang:</strong> Tarif Sewa Ruangan dan Peralatan Laboratorium untuk Kegiatan Akademik dan Non-Akademik</p>
+        </div>
+
+        <!-- Pemohon Info -->
+        <div class="info-box">
+            <div class="info-row">
+                <span class="info-label">Nama Pemohon:</span>
+                <span>{{ $booking->user->name }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Jenis Pengguna:</span>
+                <span>
+                    @if($booking->user->jenis_pengguna === 'mahasiswa')
+                        <span>Mahasiswa FIK UI</span>
+                    @elseif($booking->user->jenis_pengguna === 'dosen')
+                        <span>Dosen FIK UI</span>
+                    @elseif($booking->user->jenis_pengguna === 'staff')
+                        <span>Staff FIK UI</span>
+                    @else
+                        <span>Pihak Eksternal</span>
+                    @endif
+                </span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Instansi:</span>
+                <span>{{ $booking->user->instansi ?? 'FIK UI' }}</span>
+            </div>
+            @if(auth()->user()->jenis_pengguna !== 'umum')
+                <div class="info-row">
+                    <span class="info-label">NIM/NIP:</span>
+                    <span>{{ $booking->user->nim_nip ?? '-' }}</span>
+                </div>
+            @endif
+            <div class="info-row">
+                <span class="info-label">No. HP:</span>
+                <span>{{ $booking->user->phone ?? '-' }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Email:</span>
+                <span>{{ $booking->user->email }}</span>
+            </div>
+        </div>
+
+        <!-- Booking Details -->
+        <div class="info-box">
+            <div class="info-row">
+                <span class="info-label">Ruangan:</span>
+                <span>
+                    @if($booking->room)
+                        <strong>{{ $booking->room->kode_ruangan }} - {{ $booking->room->nama_ruangan }}</strong><br>
+                        <small class="text-muted">{{ $booking->room->lokasi }}</small>
+                    @else
+                        <span class="text-danger"><strong>TANPA RUANGAN</strong> (Pinjam Barang Saja)</span>
+                    @endif
+                </span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Tanggal Pinjam:</span>
+                <span>{{ \Carbon\Carbon::parse($booking->tanggal_pinjam)->isoFormat('dddd, D MMMM YYYY') }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Waktu:</span>
+                <span>{{ \Carbon\Carbon::parse($booking->waktu_mulai)->format('H:i') }} - {{ \Carbon\Carbon::parse($booking->waktu_selesai)->format('H:i') }} WIB</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Peran/Unit:</span>
+                <span>{{ $booking->role_unit ?? '-' }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Keperluan:</span>
+                <span>{{ $booking->keperluan }}</span>
+            </div>
+        </div>
+
+        <!-- Divider -->
+        <div class="divider"></div>
+
+        <!-- Price Breakdown -->
+        <h3 style="color: #1a4780; margin: 20px 0 15px; font-size: 16px;">Rincian Biaya</h3>
+
+        <table>
+            <thead>
+                <tr>
+                    <th width="50%">Keterangan</th>
+                    <th width="20%" class="text-center">Qty</th>
+                    <th width="30%" class="text-right">Jumlah</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Ruangan -->
+                @if($booking->room)
                     <tr>
-                        <td>Ruangan</td>
-                        <td class="text-bold">{{ $booking->room->kode_ruangan }} - {{ $booking->room->nama_ruangan }}</td>
+                        <td>
+                            Sewa Ruangan:<br>
+                            <strong>{{ $booking->room->kode_ruangan }} - {{ $booking->room->nama_ruangan }}</strong><br>
+                            <small>{{ $booking->room->lokasi }}</small>
+                        </td>
+                        <td class="text-center">1 hari</td>
+                        <td class="text-right">{{ number_format($booking->room->harga_sewa_per_hari ?? 0, 0, ',', '.') }}</td>
                     </tr>
+                    
+                    <!-- Diskon -->
+                    @php
+                        $hargaDasar = $booking->room->harga_sewa_per_hari ?? 0;
+                        $diskon = ($booking->user->jenis_pengguna !== 'umum') ? 0.25 : 0;
+                        $nominalDiskon = $hargaDasar * $diskon;
+                        $hargaSetelahDiskon = $hargaDasar - $nominalDiskon;
+                    @endphp
+                    
+                    @if($nominalDiskon > 0)
                     <tr>
-                        <td>Lokasi</td>
-                        <td>{{ $booking->room->lokasi }}</td>
-                    </tr>
-                    <tr>
-                        <td>Tanggal Pinjam</td>
-                        <td class="text-bold">{{ \Carbon\Carbon::parse($booking->tanggal_pinjam)->isoFormat('dddd, D MMMM YYYY') }}</td>
-                    </tr>
-                    <tr>
-                        <td>Waktu</td>
-                        <td>{{ \Carbon\Carbon::parse($booking->waktu_mulai)->format('H:i') }} - {{ \Carbon\Carbon::parse($booking->waktu_selesai)->format('H:i') }} WIB</td>
-                    </tr>
-                    <tr>
-                        <td>Keperluan</td>
-                        <td>{{ $booking->keperluan }}</td>
-                    </tr>
-                    @if($booking->role_unit)
-                    <tr>
-                        <td>Unit Kerja</td>
-                        <td>{{ $booking->role_unit }}</td>
+                        <td>
+                            <span class="text-danger">Diskon 25% Civitas FIK UI</span><br>
+                            <small>Sesuai SK No. 411 Pasal Ketiga</small>
+                        </td>
+                        <td class="text-center">-</td>
+                        <td class="text-right text-danger">- {{ number_format($nominalDiskon, 0, ',', '.') }}</td>
                     </tr>
                     @endif
-                </table>
-            </div>
+                @endif
 
-            <!-- Rincian Biaya -->
-            <div class="section">
-                <div class="section-title">Rincian Biaya</div>
-                
+                <!-- Barang Inventaris -->
+                @if($booking->inventories->count() > 0)
+                    @if($booking->room)
+                        <tr>
+                            <td colspan="3" style="padding: 8px 0; font-weight: bold; background-color: #f8f9fa;">
+                                BARANG INVENTARIS
+                            </td>
+                        </tr>
+                    @endif
+                    
+                    @foreach($booking->inventories as $inventory)
+                        <tr>
+                            <td>
+                                {{ $inventory->name }}<br>
+                                {{-- <small class="text-muted">Kategori: {{ $inventory->category }}</small> --}}
+                            </td>
+                            <td class="text-center">{{ $inventory->pivot->quantity }}</td>
+                            <td class="text-right">
+                                {{ number_format($inventory->pivot->price_at_booking * $inventory->pivot->quantity, 0, ',', '.') }}
+                                <br>
+                                <small class="text-muted">
+                                    (Rp {{ number_format($inventory->pivot->price_at_booking, 0, ',', '.') }}/hari)
+                                </small>
+                            </td>
+                        </tr>
+                    @endforeach
+                @endif
+
+                <!-- Biaya Tambahan -->
                 @php
-                    $hargaDasar = $booking->room->harga_sewa_per_hari ?? 0;
                     $tanggal = \Carbon\Carbon::parse($booking->tanggal_pinjam);
-                    $isWeekend = $tanggal->isSaturday() || $tanggal->isSunday();
-                    $namaHari = $tanggal->isoFormat('dddd');
-                    
-                    // Diskon 25% untuk Civitas FIK UI
-                    $diskon = ($booking->user->jenis_pengguna !== 'umum') ? 0.25 : 0;
-                    $nominalDiskon = $hargaDasar * $diskon;
-                    $hargaSetelahDiskon = $hargaDasar - $nominalDiskon;
-                    
-                    // Biaya tambahan weekend
                     $biayaTambahan = 0;
+                    $namaHari = '';
+                    
                     if ($tanggal->isSaturday()) {
-                        $biayaTambahan = 400000; // 100k cleaning + 300k technician
+                        $biayaTambahan = 400000;
+                        $namaHari = 'Sabtu';
                     } elseif ($tanggal->isSunday()) {
-                        $biayaTambahan = 500000; // 200k cleaning + 300k technician
+                        $biayaTambahan = 500000;
+                        $namaHari = 'Minggu';
                     }
                 @endphp
                 
-                <div class="breakdown-table">
-                    <table>
-                        <tr class="breakdown-row-base">
-                            <td>Harga Sewa Dasar ({{ $namaHari }})</td>
-                            <td class="text-right">Rp {{ number_format($hargaDasar, 0, ',', '.') }}</td>
-                        </tr>
-                        
-                        @if($diskon > 0)
-                        <tr class="breakdown-row-discount">
-                            <td>Diskon Civitas FIK UI (25%)</td>
-                            <td class="text-right">- Rp {{ number_format($nominalDiskon, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr class="breakdown-row-subtotal">
-                            <td>Subtotal Setelah Diskon</td>
-                            <td class="text-right">Rp {{ number_format($hargaSetelahDiskon, 0, ',', '.') }}</td>
-                        </tr>
-                        @endif
-                        
-                        @if($biayaTambahan > 0)
-                        <tr class="breakdown-row-additional">
-                            <td>Biaya Tambahan Hari {{ $namaHari }}</td>
-                            <td class="text-right">+ Rp {{ number_format($biayaTambahan, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr>
-                            <td colspan="2" style="font-size: 9px; color: #666; padding-top: 3px;">
-                                <em>* Biaya kebersihan dan teknisi untuk hari libur</em>
-                            </td>
-                        </tr>
-                        @endif
-                        
-                        <tr class="breakdown-row-total">
-                            <td>TOTAL PEMBAYARAN</td>
-                            <td class="text-right">Rp {{ number_format($booking->total_amount, 0, ',', '.') }}</td>
-                        </tr>
-                    </table>
+                @if($biayaTambahan > 0)
+                    <tr>
+                        <td>
+                            Biaya Tambahan Hari {{ $namaHari }}<br>
+                            <small>Kebersihan (Rp {{ number_format($namaHari === 'Sabtu' ? 100000 : 200000, 0, ',', '.') }}) + Teknisi (Rp 300.000)</small>
+                        </td>
+                        <td class="text-center">1 hari</td>
+                        <td class="text-right text-warning">+ {{ number_format($biayaTambahan, 0, ',', '.') }}</td>
+                    </tr>
+                @endif
+
+                <!-- Total -->
+                <tr class="total-row">
+                    <td><strong>TOTAL YANG HARUS DIBAYAR</strong></td>
+                    <td class="text-center"></td>
+                    <td class="text-right text-primary" style="font-size: 16px;">
+                        Rp {{ number_format($booking->total_amount, 0, ',', '.') }}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Payment Instructions -->
+        <div class="payment-info">
+            <h4><i class="fas fa-money-bill-wave mr-2"></i>PETUNJUK PEMBAYARAN</h4>
+            <p><strong>Bank:</strong> BNI Cabang Kampus UI Depok</p>
+            <p><strong>No. Rekening:</strong> <span class="text-primary" style="font-size: 14px; letter-spacing: 2px;">1273000535</span></p>
+            <p><strong>Atas Nama:</strong> Universitas Indonesia FIK – Non Biaya Pendidikan</p>
+            <p><strong>Catatan:</strong> Transfer dengan nominal <strong>tepat</strong> sesuai invoice. Cantumkan nomor invoice di berita transfer.</p>
+            <p><strong>Batas Waktu:</strong> 3x24 jam setelah persetujuan booking. Booking dibatalkan otomatis jika melebihi batas waktu.</p>
+        </div>
+
+        <!-- SK Reminder -->
+        <div class="sk-reference">
+            <p><i class="fas fa-exclamation-triangle mr-2"></i> <strong>PENTING:</strong> Sesuai Pasal Keenam SK No. 411, permohonan harus diajukan secara tertulis minimal 2 minggu sebelum pelaksanaan kegiatan.</p>
+            <p><i class="fas fa-shield-alt mr-2"></i> Dokumen ini telah ditandatangani secara elektronik menggunakan sertifikat BSrE (Balai Sertifikasi Elektronik).</p>
+        </div>
+
+        <!-- Signature -->
+        {{-- <div class="signature">
+            <div class="signature-box">
+                <p>Depok, {{ \Carbon\Carbon::parse($booking->created_at)->isoFormat('D MMMM YYYY') }}</p>
+                <p>Pemohon,</p>
+                <div class="signature-line" style="margin-top: 60px;">
+                    {{ $booking->user->name }}
                 </div>
             </div>
-
-            <!-- Informasi Pembayaran -->
-            <div class="bank-info">
-                <h4>Informasi Pembayaran</h4>
-                <p><strong>Bank BNI Cabang Kampus UI Depok</strong></p>
-                <p>Nomor Rekening: <strong>1273000535</strong></p>
-                <p>Atas Nama: <strong>Universitas Indonesia FIK Non Biaya Pendidikan</strong></p>
-                <p style="margin-top: 10px; font-size: 10px;">
-                    <em>Transfer sesuai nominal di atas, lalu upload bukti pembayaran melalui sistem.</em>
-                </p>
+            <div class="signature-box">
+                <p>Mengetahui,</p>
+                <p>Wakil Dekan Bidang Sumber Daya,<br>Ventura & Administrasi Umum</p>
+                <div class="signature-line" style="margin-top: 40px;">
+                    FIK UI
+                </div>
             </div>
+        </div> --}}
 
-            <!-- Footer -->
-            <div class="footer">
-                <p class="footer-note">
-                    Invoice ini berlaku selama <strong>3 hari sejak tanggal penerbitan</strong>.<br>
-                    Pembayaran yang terlambat akan dikenakan pembatalan otomatis.
-                </p>
-                <p class="footer-stamp">
-                    Dicetak pada: {{ now()->isoFormat('dddd, D MMMM YYYY [pukul] HH:mm') }} WIB<br>
-                    Sistem Peminjaman Ruangan FIK UI - {{ config('app.url') }}
-                </p>
-            </div>
+        <!-- Footer -->
+        <div class="footer">
+            <p>Invoice ini dibuat secara elektronik melalui Sistem Peminjaman Ruangan FIK UI</p>
+            <p>© {{ date('Y') }} Fakultas Ilmu Keperawatan Universitas Indonesia</p>
+            <p class="no-print" style="margin-top: 10px; color: #d62828; font-weight: bold;">
+                ⚠️ INI ADALAH DOKUMEN RESMI. HARAP SIMPAN DENGAN BAIK SEBAGAI BUKTI PEMBAYARAN.
+            </p>
         </div>
     </div>
 </body>

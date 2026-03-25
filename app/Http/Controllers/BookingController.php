@@ -5,17 +5,15 @@ namespace App\Http\Controllers;
 use Carbon\Carbon;
 use App\Models\Room;
 use App\Models\Booking;
+use App\Models\Inventory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Yajra\DataTables\Facades\DataTables;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class BookingController extends Controller
 {
-    use AuthorizesRequests;
-
     /**
      * Display booking list (Admin: all bookings, User: own bookings)
      */
@@ -30,8 +28,8 @@ class BookingController extends Controller
         ];
 
         $bookings = $isAdmin 
-            ? Booking::with(['user', 'room'])->latest()->get()
-            : Booking::with('room')->where('user_id', Auth::id())->latest()->get();
+            ? Booking::with(['user', 'room', 'inventories'])->latest()->get()
+            : Booking::with(['room', 'inventories'])->where('user_id', Auth::id())->latest()->get();
 
         $view = $isAdmin ? 'admin.booking.index' : 'user.booking.index';
         
@@ -44,9 +42,10 @@ class BookingController extends Controller
     public function create()
     {
         return view('admin.booking.create', [
-            'title' => 'Form Pinjam Ruangan',
+            'title' => 'Form Pinjam Ruangan & Barang',
             'menuBooking' => 'active',
             'rooms' => Room::where('is_active', true)->get(),
+            'inventories' => Inventory::available()->orderBy('category')->get(),
         ]);
     }
 
@@ -56,50 +55,69 @@ class BookingController extends Controller
     public function store(Request $request)
     {
         // Validation
-        $validated = $request->validate([
-            'room_id' => 'required|exists:rooms,id',
+        $request->validate([
+            'room_id' => 'nullable|exists:rooms,id',
             'tanggal_pinjam' => 'required|date|after_or_equal:today',
             'waktu_mulai' => 'required|date_format:H:i',
             'waktu_selesai' => 'required|date_format:H:i|after:waktu_mulai',
             'keperluan' => 'required|string|max:500',
             'role_unit' => 'nullable|string|max:255',
+            'selected_inventories' => 'nullable|string',
         ], [
-            'room_id.required' => 'Ruangan wajib dipilih',
+            'room_id.required' => 'Ruangan wajib dipilih (atau centang "Pinjam Barang")',
             'tanggal_pinjam.after_or_equal' => 'Tanggal tidak boleh kemarin',
             'waktu_selesai.after' => 'Waktu selesai harus setelah waktu mulai',
             'keperluan.required' => 'Keperluan wajib diisi',
         ]);
 
         $user = Auth::user();
-        $room = Room::findOrFail($request->room_id);
+        $room = $request->filled('room_id') && $request->room_id 
+            ? Room::findOrFail($request->room_id) 
+            : null;
+        
         $tanggal = Carbon::parse($request->tanggal_pinjam);
+        $selectedInventories = json_decode($request->selected_inventories ?? '[]', true) ?? [];
 
-        // Check room availability
-        if (!$room->is_active) {
+        // === VALIDASI: Minimal 1 item (ruangan atau barang) ===
+        if (!$room && empty($selectedInventories)) {
+            return back()->withErrors([
+                'room_id' => 'Anda harus memilih minimal 1 ruangan atau 1 barang untuk melakukan peminjaman.'
+            ])->withInput();
+        }
+
+        // === VALIDASI: Konflik jadwal ruangan (jika ada ruangan) ===
+        if ($room && $this->hasScheduleConflict($request)) {
+            return back()->withErrors([
+                'waktu_mulai' => 'Jadwal bentrok! Ruangan sudah dibooking pada waktu tersebut.'
+            ])->withInput();
+        }
+
+        // === VALIDASI: Stok barang ===
+        $inventoryErrors = $this->validateInventoryStock($selectedInventories);
+        if (!empty($inventoryErrors)) {
+            return back()->withErrors($inventoryErrors)->withInput();
+        }
+
+        // === VALIDASI: Ruangan aktif (jika ada ruangan) ===
+        if ($room && !$room->is_active) {
             return back()->withErrors(['room_id' => 'Ruangan tidak tersedia'])->withInput();
         }
 
-        // Check schedule conflict
-        if ($this->hasScheduleConflict($request)) {
-            return back()
-                ->withErrors(['waktu_mulai' => 'Jadwal bentrok! Pilih waktu lain.'])
-                ->withInput();
-        }
-
-        // Calculate total amount
-        $totalAmount = $this->calculateTotalAmount($room, $tanggal, $user);
-
-        // Validate: External users cannot book free rooms
-        if ($user->jenis_pengguna === 'umum' && $room->harga_sewa_per_hari == 0) {
+        // === VALIDASI: Eksternal tidak boleh pinjam ruangan gratis ===
+        if ($room && $user->jenis_pengguna === 'umum' && $room->harga_sewa_per_hari == 0) {
             return back()->withErrors([
                 'room_id' => 'Ruangan gratis hanya untuk Civitas Akademika FIK UI. Pilih ruangan berbayar.'
             ])->withInput();
         }
 
-        // Create booking
+        // === HITUNG TOTAL HARGA ===
+        $totalAmount = $this->calculateTotalAmount($room, $tanggal, $user, $selectedInventories);
+
+        // === SIMPAN BOOKING ===
         $booking = Booking::create([
             'user_id' => $user->id,
-            'room_id' => $request->room_id,
+            'room_id' => $request->room_id ?? null,
+            'is_inventory_only' => !$request->room_id,
             'tanggal_pinjam' => $request->tanggal_pinjam,
             'waktu_mulai' => $request->waktu_mulai,
             'waktu_selesai' => $request->waktu_selesai,
@@ -109,7 +127,22 @@ class BookingController extends Controller
             'status' => 'pending',
         ]);
 
-        // Generate invoice if paid
+        // === SIMPAN DATA BARANG ===
+        if (!empty($selectedInventories)) {
+            foreach ($selectedInventories as $item) {
+                $inventory = Inventory::findOrFail($item['id']);
+                
+                $booking->inventories()->attach($inventory->id, [
+                    'quantity' => $item['quantity'],
+                    'price_at_booking' => $item['price'],
+                ]);
+                
+                // Kurangi stok tersedia
+                $inventory->decrement('stock_available', $item['quantity']);
+            }
+        }
+
+        // === GENERATE INVOICE ===
         if ($totalAmount > 0) {
             $this->generateInvoice($booking);
             return redirect()->route('dashboard')
@@ -166,6 +199,11 @@ class BookingController extends Controller
             return back()->withErrors(['status' => 'Hanya booking pending yang bisa ditolak']);
         }
 
+        // Kembalikan stok barang
+        foreach ($booking->inventories as $inventory) {
+            $inventory->increment('stock_available', $inventory->pivot->quantity);
+        }
+
         $booking->update([
             'status' => 'rejected',
             'rejected_reason' => $request->rejected_reason,
@@ -186,6 +224,11 @@ class BookingController extends Controller
 
         if (!$allowed) {
             abort(403, 'Tidak diizinkan membatalkan peminjaman ini.');
+        }
+
+        // Kembalikan stok barang
+        foreach ($booking->inventories as $inventory) {
+            $inventory->increment('stock_available', $inventory->pivot->quantity);
         }
 
         $booking->update(['status' => 'cancelled']);
@@ -219,6 +262,7 @@ class BookingController extends Controller
 
         return view('admin.booking.create', [
             'rooms' => Room::where('is_active', true)->orderBy('kode_ruangan')->get(),
+            'inventories' => Inventory::available()->orderBy('category')->get(),
             'data' => $data,
             'title' => 'Ajukan Perpanjangan Peminjaman',
         ]);
@@ -312,7 +356,7 @@ class BookingController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        $query = Booking::with(['user', 'room']);
+        $query = Booking::with(['user', 'room', 'inventories']);
 
         // Filters
         if ($request->filled('status')) {
@@ -328,14 +372,20 @@ class BookingController extends Controller
         $query->orderBy('tanggal_pinjam', 'desc')->orderBy('waktu_mulai', 'desc');
 
         return DataTables::of($query)
-            ->addColumn('time_range', fn($booking) => 
-                Carbon::parse($booking->waktu_mulai)->format('H:i') . ' - ' . 
+            ->addColumn('ruangan', function ($booking) {           // ✅ tambah ini
+                if ($booking->room) {
+                    return $booking->room->kode_ruangan;
+                }
+                return '<span class="text-muted"><i class="fas fa-box me-1"></i> Barang Saja</span>';
+            })
+            ->addColumn('time_range', fn($booking) =>
+                Carbon::parse($booking->waktu_mulai)->format('H:i') . ' - ' .
                 Carbon::parse($booking->waktu_selesai)->format('H:i')
             )
             ->addColumn('status_badge', fn($booking) => $this->getStatusBadge($booking->status))
             ->addColumn('action', fn($booking) => '<span class="text-muted">—</span>')
             ->addIndexColumn()
-            ->rawColumns(['status_badge', 'action'])
+            ->rawColumns(['ruangan', 'status_badge', 'action'])    // ✅ tambah 'ruangan'
             ->make(true);
     }
 
@@ -346,6 +396,11 @@ class BookingController extends Controller
      */
     private function hasScheduleConflict(Request $request): bool
     {
+        // Hanya cek konflik jika ada ruangan yang dipilih
+        if (!$request->filled('room_id') || !$request->room_id) {
+            return false;
+        }
+
         return Booking::where('room_id', $request->room_id)
             ->where('tanggal_pinjam', $request->tanggal_pinjam)
             ->whereNotIn('status', ['rejected', 'cancelled'])
@@ -358,44 +413,58 @@ class BookingController extends Controller
 
     /**
      * Calculate total amount based on SK No. 411
+     * 
+     * @param Room|null $room
+     * @param Carbon $tanggal
+     * @param mixed $user
+     * @param array $selectedInventories
+     * @return float
      */
-    private function calculateTotalAmount(Room $room, Carbon $tanggal, $user): float
+    private function calculateTotalAmount(?Room $room, Carbon $tanggal, $user, array $selectedInventories): float
     {
-        // Step 1: Base price
-        $hargaDasar = $room->harga_sewa_per_hari ?? 0;
-
-        // Step 2: 25% discount for FIK UI (non-external)
+        // Step 1: Harga ruangan (dengan diskon 25% untuk internal)
+        $hargaRuangan = $room ? ($room->harga_sewa_per_hari ?? 0) : 0;
         $diskon = ($user->jenis_pengguna !== 'umum') ? 0.25 : 0;
-        $hargaSetelahDiskon = $hargaDasar * (1 - $diskon);
+        $hargaSetelahDiskon = $hargaRuangan * (1 - $diskon);
 
-        // Step 3: Additional fees (Saturday/Sunday)
-        $biayaTambahan = 0;
-        
-        if ($tanggal->isSaturday()) {
-            $biayaTambahan = 100000 + 300000; // Cleaning + Technician
-        } elseif ($tanggal->isSunday()) {
-            $biayaTambahan = 200000 + 300000; // Cleaning + Technician
+        // Step 2: Harga barang
+        $hargaBarang = 0;
+        foreach ($selectedInventories as $item) {
+            $hargaBarang += $item['price'] * $item['quantity'];
         }
 
-        // Step 4: Total
-        return $hargaSetelahDiskon + $biayaTambahan;
+        // Step 3: Biaya tambahan (Sabtu/Minggu)
+        $biayaTambahan = 0;
+        if ($tanggal->isSaturday()) {
+            $biayaTambahan = 400000; // Kebersihan 100k + Teknisi 300k
+        } elseif ($tanggal->isSunday()) {
+            $biayaTambahan = 500000; // Kebersihan 200k + Teknisi 300k
+        }
+
+        // Step 4: Total akhir
+        return $hargaSetelahDiskon + $hargaBarang + $biayaTambahan;
     }
 
     /**
-     * Generate invoice PDF
+     * Generate invoice PDF (dengan atau tanpa barang)
      */
     private function generateInvoice(Booking $booking): void
     {
         $invoiceNumber = 'INV/' . now()->format('Y') . '/' . str_pad($booking->id, 4, '0', STR_PAD_LEFT);
         
         $booking->update(['invoice_number' => $invoiceNumber]);
-        $booking->load('room');
+        $booking->load('room', 'inventories', 'user');
 
-        $pdf = Pdf::loadView('booking.pdf.invoice', ['booking' => $booking]);
+        // SATU VIEW UNTUK SEMUA KASUS
+        $pdf = Pdf::loadView('booking.pdf.invoice', ['booking' => $booking])
+            ->setPaper('a4', 'portrait')
+            ->setOption('margin-top', 5)
+            ->setOption('margin-bottom', 5)
+            ->setOption('margin-left', 5)
+            ->setOption('margin-right', 5);
+
         $invoicePath = 'invoices/invoice_' . $booking->id . '_' . time() . '.pdf';
-        
         Storage::disk('public')->put($invoicePath, $pdf->output());
-        
         $booking->update(['invoice_path' => $invoicePath]);
     }
 
@@ -429,5 +498,29 @@ class BookingController extends Controller
         ];
 
         return $badges[$status] ?? '<span class="badge badge-secondary">Unknown</span>';
+    }
+
+    /**
+     * Validate inventory stock availability
+     */
+    private function validateInventoryStock(array $selectedInventories): array
+    {
+        $errors = [];
+        
+        foreach ($selectedInventories as $item) {
+            $inventory = Inventory::find($item['id'] ?? null);
+            
+            if (!$inventory || !$inventory->is_active) {
+                $errors['inventory_' . ($item['id'] ?? 'unknown')] = 'Barang "' . ($item['name'] ?? 'Tidak diketahui') . '" tidak tersedia.';
+                continue;
+            }
+            
+            if ($inventory->stock_available < ($item['quantity'] ?? 1)) {
+                $errors['inventory_' . $item['id']] = 
+                    'Stok "' . $inventory->name . '" tidak mencukupi. Tersedia: ' . $inventory->stock_available;
+            }
+        }
+        
+        return $errors;
     }
 }

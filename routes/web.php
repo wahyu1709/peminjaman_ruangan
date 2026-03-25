@@ -1,13 +1,14 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\HomeController;
-use App\Http\Controllers\RoomController;
 use App\Http\Controllers\BookingController;
-use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\RoomController;
+use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\UserManagementController;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('welcome');
 
@@ -67,21 +68,68 @@ Route::middleware('checkLogin')->group(function(){
         Route::delete('/room/destroy/{id}', [RoomController::class, 'destroy'])->name('roomDestroy');
         Route::delete('/rooms/{id}/delete-image', [RoomController::class, 'deleteImage'])->name('rooms.delete-image');
     
-        // Statistik peminjaman
-        Route::get('/statistics', [DashboardController::class, 'statistics'])->name('statistics');
-        // API Statistik
+        // ── Statistik ─────────────────────────────────────────────────────────────
+        Route::get('/statistics', [DashboardController::class, 'statistics'])
+            ->name('statistics');
+
+        // API: data yang sudah ada
         Route::get('/api/statistics/booking-per-month', [DashboardController::class, 'bookingPerMonth'])
             ->name('api.statistics.booking.per.month');
+            // ?year=YYYY
+            // ?year=YYYY&detail_status=1   → tambah by_status
+            // ?year=YYYY&user_type=1       → tambah by_user_type
+
         Route::get('/api/statistics/booking-per-day', [DashboardController::class, 'bookingPerDay'])
             ->name('api.statistics.booking.per.day');
-        // API Statistik Top Ruangan
+            // ?days=30
+
         Route::get('/api/statistics/top-rooms', [DashboardController::class, 'topRooms'])
             ->name('api.statistics.top.rooms');
-        // API Statistik Waktu
+            // ?year=YYYY[&month=MM]
+
         Route::get('/api/statistics/time-analysis', [DashboardController::class, 'timeAnalysis'])
             ->name('api.statistics.time.analysis');
-        // Export PDF Lengkap
-        Route::get('/statistics/export-full', [DashboardController::class, 'exportFullPdf'])->name('statistics.export.full');
+            // ?year=YYYY[&month=MM]
+
+        // API: endpoint baru
+        Route::get('/api/statistics/revenue', [DashboardController::class, 'revenuePerMonth'])
+            ->name('api.statistics.revenue');
+            // ?year=YYYY
+
+        Route::get('/api/statistics/inventory', [DashboardController::class, 'topInventory'])
+            ->name('api.statistics.inventory');
+            // ?year=YYYY[&month=MM]
+
+        // Export PDF (belum aktif — mengembalikan 501)
+        Route::get('/statistics/export-full', [DashboardController::class, 'exportFullPdf'])
+            ->name('statistics.export.full');
+
+        Route::prefix('inventory')->name('inventory.')->group(function () {
+ 
+            // Halaman & DataTables
+            Route::get('/',             [InventoryController::class, 'index'])->name('index');
+            Route::get('/data',         [InventoryController::class, 'data'])->name('data');
+        
+            // Export (taruh SEBELUM /{id} agar tidak konflik)
+            Route::get('/export/excel', [InventoryController::class, 'exportExcel'])->name('export.excel');
+            Route::get('/export/pdf',   [InventoryController::class, 'exportPdf'])->name('export.pdf');
+        
+            // CRUD Kategori (taruh SEBELUM /{id})
+            Route::get('/categories',         [InventoryController::class, 'categories'])->name('categories');
+            Route::post('/categories',        [InventoryController::class, 'storeCategory'])->name('categories.store');
+            Route::put('/categories/{id}',    [InventoryController::class, 'updateCategory'])->name('categories.update');
+            Route::delete('/categories/{id}', [InventoryController::class, 'destroyCategory'])->name('categories.destroy');
+        
+            // CRUD Barang
+            Route::post('/',            [InventoryController::class, 'store'])->name('store');
+            Route::get('/{id}',         [InventoryController::class, 'show'])->name('show');
+            Route::put('/{id}',         [InventoryController::class, 'update'])->name('update');
+            Route::delete('/{id}',      [InventoryController::class, 'destroy'])->name('destroy');
+        
+            // Stok & Status
+            Route::patch('/{id}/stock', [InventoryController::class, 'adjustStock'])->name('stock');
+            Route::patch('/{id}/toggle',[InventoryController::class, 'toggleStatus'])->name('toggle');
+        });
     });
 
     // Booking
