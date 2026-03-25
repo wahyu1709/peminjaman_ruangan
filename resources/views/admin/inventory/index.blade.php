@@ -893,240 +893,234 @@ $(document).ready(function () {
         });
     });
 
-});
+    // ════════════════════════════════════════════════════════════
+    // CATEGORY MANAGEMENT
+    // ════════════════════════════════════════════════════════════
 
-// ── Stock type toggle ──────────────────────────────────────
-function setStockType(type) {
-    document.getElementById('stock_type').value = type;
-    const addBtn    = document.getElementById('btnAdd');
-    const reduceBtn = document.getElementById('btnReduce');
-    const submitBtn = document.getElementById('stockSubmitBtn');
+    // ── Load daftar kategori ───────────────────────────────────
+    function loadCategories() {
+        $.get("{{ route('inventory.categories') }}", function (res) {
+            if (!res.success) return;
+            const cats = res.data;
+            $('#catCount').text('(' + cats.length + ' kategori)');
 
-    if (type === 'add') {
-        addBtn.classList.add('active-add');
-        addBtn.classList.remove('active-reduce');
-        reduceBtn.classList.remove('active-add', 'active-reduce');
-        submitBtn.style.background = 'linear-gradient(135deg,#10b981,#059669)';
-    } else {
-        reduceBtn.classList.add('active-reduce');
-        reduceBtn.classList.remove('active-add');
-        addBtn.classList.remove('active-add', 'active-reduce');
-        submitBtn.style.background = 'linear-gradient(135deg,#ef4444,#dc2626)';
+            if (!cats.length) {
+                $('#catTableBody').html(
+                    '<tr><td colspan="4" style="text-align:center;padding:24px;color:#94a3b8;">Belum ada kategori.</td></tr>'
+                );
+                return;
+            }
+
+            const rows = cats.map(function (c) {
+                const activeBadge = c.is_active
+                    ? '<span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:10px;font-size:.7rem;font-weight:700;">Aktif</span>'
+                    : '<span style="background:#f1f5f9;color:#475569;padding:2px 8px;border-radius:10px;font-size:.7rem;font-weight:700;">Nonaktif</span>';
+
+                return `<tr style="border-bottom:1px solid #f1f5f9;">
+                    <td style="padding:10px 12px;font-weight:600;color:#0f172a;">
+                        <i class="fas fa-box" style="color:#7c3aed;margin-right:7px;"></i>${c.name}
+                    </td>
+                    <td style="padding:10px 12px;">
+                        <code style="background:#f1f5f9;padding:2px 7px;border-radius:4px;
+                                     font-size:.75rem;color:#475569;">${c.key}</code>
+                    </td>
+                    <td style="padding:10px 12px;text-align:center;">${activeBadge}</td>
+                    <td style="padding:10px 12px;text-align:center;">
+                        <button class="action-btn ab-edit btn-edit-cat mr-1"
+                                data-id="${c.id}"
+                                data-name="${c.name}"
+                                data-active="${c.is_active ? 1 : 0}"
+                                title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-btn ab-delete btn-delete-cat"
+                                data-id="${c.id}"
+                                data-name="${c.name}"
+                                title="Hapus">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>`;
+            }).join('');
+
+            $('#catTableBody').html(rows);
+        });
     }
-}
 
-// ════════════════════════════════════════════════════════════
-// CATEGORY MANAGEMENT
-// ════════════════════════════════════════════════════════════
+    // Buka modal → langsung load
+    $('#manageCatModal').on('show.bs.modal', loadCategories);
 
-// ── Load daftar kategori ───────────────────────────────────
-function loadCategories() {
-    $.get("{{ route('inventory.categories') }}", function (res) {
-        if (!res.success) return;
-        const cats = res.data;
-        $('#catCount').text(`(${cats.length} kategori)`);
+    // ── Tambah kategori ────────────────────────────────────────
+    $('#addCatForm').on('submit', function (e) {
+        e.preventDefault();
 
-        if (!cats.length) {
-            $('#catTableBody').html('<tr><td colspan="6" style="text-align:center;padding:20px;color:#94a3b8;">Belum ada kategori.</td></tr>');
-            return;
-        }
-
-        const rows = cats.map(c => {
-            const activeBadge = c.is_active
-                ? '<span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:10px;font-size:.7rem;font-weight:700;">Aktif</span>'
-                : '<span style="background:#f1f5f9;color:#475569;padding:2px 8px;border-radius:10px;font-size:.7rem;font-weight:700;">Nonaktif</span>';
-
-            return `<tr style="border-bottom:1px solid #f1f5f9;">
-                <td style="padding:9px 10px;text-align:center;">
-                    <i class="${c.icon || 'fas fa-box'}" style="color:#7c3aed;font-size:1rem;"></i>
-                </td>
-                <td style="padding:9px 10px;font-weight:600;color:#0f172a;">${c.name}</td>
-                <td style="padding:9px 10px;">
-                    <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:.75rem;color:#475569;">${c.key}</code>
-                </td>
-                <td style="padding:9px 10px;text-align:center;color:#94a3b8;font-size:.82rem;">${c.sort_order}</td>
-                <td style="padding:9px 10px;text-align:center;">${activeBadge}</td>
-                <td style="padding:9px 10px;text-align:center;">
-                    <button class="action-btn ab-edit btn-edit-cat mr-1"
-                            data-id="${c.id}" data-name="${c.name}" data-icon="${c.icon||'fas fa-box'}"
-                            data-sort="${c.sort_order}" data-active="${c.is_active?1:0}"
-                            title="Edit">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="action-btn ab-delete btn-delete-cat"
-                            data-id="${c.id}" data-name="${c.name}"
-                            title="Hapus">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </td>
-            </tr>`;
-        }).join('');
-
-        $('#catTableBody').html(rows);
-    });
-}
-
-// ── Buka modal kategori ────────────────────────────────────
-$('#manageCatModal').on('show.bs.modal', loadCategories);
-
-// ── Preview ikon saat ketik ────────────────────────────────
-$('#newCatIcon').on('input', function () {
-    $('#newCatIconPreview').html(`<i class="${this.value || 'fas fa-box'}"></i>`);
-});
-$('#editCatIcon').on('input', function () {
-    $('#editCatIconPreview').html(`<i class="${this.value || 'fas fa-box'}"></i>`);
-});
-
-// ── Tambah kategori baru ───────────────────────────────────
-$('#addCatForm').on('submit', function (e) {
-    e.preventDefault();
-
-    $.ajax({
-        url: "{{ route('inventory.categories.store') }}",
-        method: 'POST',
-        data: $(this).serialize() + '&_token={{ csrf_token() }}',
-        success: function (res) {
-            if (res.success) {
-                Swal.fire({ icon:'success', title:'Berhasil!', text:res.message, timer:1800, showConfirmButton:false });
-                $('#addCatForm')[0].reset();
-                $('#newCatName').val('');
-                $('#newCatIcon').val('fas fa-box');
-                $('#newCatIconPreview').html('<i class="fas fa-box"></i>');
-                loadCategories();
-                // Reload filter tabs di halaman
-                reloadCategoryTabs();
-            } else {
-                Swal.fire({ icon:'error', title:'Gagal!', text:res.message });
-            }
-        },
-        error: function (xhr) {
-            const msg = xhr.responseJSON?.errors
-                ? Object.values(xhr.responseJSON.errors)[0][0]
-                : (xhr.responseJSON?.message || 'Terjadi kesalahan');
-            Swal.fire({ icon:'error', title:'Error!', text:msg });
-        }
-    });
-});
-
-// ── Edit kategori — buka form ──────────────────────────────
-$(document).on('click', '.btn-edit-cat', function () {
-    const d = $(this).data();
-    $('#editCatId').val(d.id);
-    $('#editCatName').val(d.name);
-    $('#editCatIcon').val(d.icon);
-    $('#editCatIconPreview').html(`<i class="${d.icon||'fas fa-box'}"></i>`);
-    $('#editCatSort').val(d.sort);
-    $('#editCatActive').val(d.active);
-    $('#editCatModal').modal('show');
-});
-
-// ── Edit kategori — submit ─────────────────────────────────
-$('#editCatForm').on('submit', function (e) {
-    e.preventDefault();
-    const id = $('#editCatId').val();
-
-    $.ajax({
-        url: "{{ url('/inventory/categories') }}/" + id,
-        method: 'PUT',
-        data: $(this).serialize() + '&_token={{ csrf_token() }}',
-        success: function (res) {
-            if (res.success) {
-                Swal.fire({ icon:'success', title:'Berhasil!', text:res.message, timer:1800, showConfirmButton:false });
-                $('#editCatModal').modal('hide');
-                loadCategories();
-                reloadCategoryTabs();
-            } else {
-                Swal.fire({ icon:'error', title:'Gagal!', text:res.message });
-            }
-        },
-        error: function (xhr) {
-            const msg = xhr.responseJSON?.errors
-                ? Object.values(xhr.responseJSON.errors)[0][0]
-                : (xhr.responseJSON?.message || 'Terjadi kesalahan');
-            Swal.fire({ icon:'error', title:'Error!', text:msg });
-        }
-    });
-});
-
-// ── Hapus kategori ─────────────────────────────────────────
-$(document).on('click', '.btn-delete-cat', function () {
-    const id   = $(this).data('id');
-    const name = $(this).data('name');
-
-    Swal.fire({
-        title: 'Hapus Kategori?',
-        html: `Yakin hapus kategori <strong>${name}</strong>?<br><small class="text-muted">Kategori yang masih memiliki barang tidak bisa dihapus.</small>`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#dc2626',
-        cancelButtonColor: '#64748b',
-        confirmButtonText: '<i class="fas fa-trash mr-1"></i> Ya, Hapus',
-        cancelButtonText: 'Batal',
-    }).then(result => {
-        if (!result.isConfirmed) return;
         $.ajax({
-            url: "{{ url('/inventory/categories') }}/" + id,
-            method: 'DELETE',
-            data: { _token: '{{ csrf_token() }}' },
+            url: "{{ route('inventory.categories.store') }}",
+            method: 'POST',
+            data: { _token: '{{ csrf_token() }}', name: $('#newCatName').val() },
             success: function (res) {
                 if (res.success) {
-                    Swal.fire({ icon:'success', title:'Terhapus!', text:res.message, timer:1800, showConfirmButton:false });
+                    Swal.fire({ icon:'success', title:'Berhasil!', text:res.message, timer:1800, showConfirmButton:false });
+                    $('#newCatName').val('').focus();
                     loadCategories();
                     reloadCategoryTabs();
                 } else {
-                    Swal.fire({ icon:'warning', title:'Tidak Bisa Dihapus', text:res.message });
+                    Swal.fire({ icon:'error', title:'Gagal!', text:res.message });
                 }
             },
             error: function (xhr) {
-                Swal.fire({ icon:'error', title:'Error!', text: xhr.responseJSON?.message || 'Terjadi kesalahan' });
+                const msg = xhr.responseJSON?.errors
+                    ? Object.values(xhr.responseJSON.errors)[0][0]
+                    : (xhr.responseJSON?.message || 'Terjadi kesalahan');
+                Swal.fire({ icon:'error', title:'Error!', text:msg });
             }
         });
     });
+
+    // ── Edit kategori — buka modal ─────────────────────────────
+    $(document).on('click', '.btn-edit-cat', function () {
+        const d = $(this).data();
+        $('#editCatId').val(d.id);
+        $('#editCatName').val(d.name);
+        $('#editCatActive').val(d.active);
+        $('#editCatModal').modal('show');
+    });
+
+    // ── Edit kategori — submit ─────────────────────────────────
+    $('#editCatForm').on('submit', function (e) {
+        e.preventDefault();
+        const id = $('#editCatId').val();
+
+        $.ajax({
+            url: "{{ url('/inventory/categories') }}/" + id,
+            method: 'PUT',
+            data: {
+                _token:    '{{ csrf_token() }}',
+                name:      $('#editCatName').val(),
+                is_active: $('#editCatActive').val(),
+                // icon & sort_order tidak dikirim — backend pakai default
+            },
+            success: function (res) {
+                if (res.success) {
+                    Swal.fire({ icon:'success', title:'Berhasil!', text:res.message, timer:1800, showConfirmButton:false });
+                    $('#editCatModal').modal('hide');
+                    loadCategories();
+                    reloadCategoryTabs();
+                } else {
+                    Swal.fire({ icon:'error', title:'Gagal!', text:res.message });
+                }
+            },
+            error: function (xhr) {
+                const msg = xhr.responseJSON?.errors
+                    ? Object.values(xhr.responseJSON.errors)[0][0]
+                    : (xhr.responseJSON?.message || 'Terjadi kesalahan');
+                Swal.fire({ icon:'error', title:'Error!', text:msg });
+            }
+        });
+    });
+
+    // ── Hapus kategori ─────────────────────────────────────────
+    $(document).on('click', '.btn-delete-cat', function () {
+        const id   = $(this).data('id');
+        const name = $(this).data('name');
+
+        Swal.fire({
+            title: 'Hapus Kategori?',
+            html:  `Yakin hapus kategori <strong>${name}</strong>?<br>
+                    <small class="text-muted">Kategori yang masih memiliki barang tidak bisa dihapus.</small>`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor:  '#64748b',
+            confirmButtonText:  '<i class="fas fa-trash mr-1"></i> Ya, Hapus',
+            cancelButtonText:   'Batal',
+        }).then(function (result) {
+            if (!result.isConfirmed) return;
+
+            $.ajax({
+                url:    "{{ url('/inventory/categories') }}/" + id,
+                method: 'DELETE',
+                data:   { _token: '{{ csrf_token() }}' },
+                success: function (res) {
+                    if (res.success) {
+                        Swal.fire({ icon:'success', title:'Terhapus!', text:res.message, timer:1800, showConfirmButton:false });
+                        loadCategories();
+                        reloadCategoryTabs();
+                    } else {
+                        Swal.fire({ icon:'warning', title:'Tidak Bisa Dihapus', text:res.message });
+                    }
+                },
+                error: function (xhr) {
+                    Swal.fire({ icon:'error', title:'Error!', text: xhr.responseJSON?.message || 'Terjadi kesalahan' });
+                }
+            });
+        });
+    });
+
+    // ── Reload filter tabs setelah kategori berubah ────────────
+    function reloadCategoryTabs() {
+        $.get("{{ route('inventory.categories') }}", function (res) {
+            if (!res.success) return;
+
+            const activeCats = res.data.filter(function (c) { return c.is_active; });
+
+            let html = `<a href="#" class="filter-tab ${currentCategory === '' ? 'active' : ''}" data-category="">
+                <i class="fas fa-th"></i> Semua
+            </a>`;
+
+            activeCats.forEach(function (c) {
+                const isActive = currentCategory === c.key ? 'active' : '';
+                html += `<a href="#" class="filter-tab ${isActive}" data-category="${c.key}">
+                    <i class="fas fa-box"></i> ${c.name}
+                </a>`;
+            });
+
+            $('#categoryTabs').html(html);
+
+            // Re-attach event
+            $('#categoryTabs a').off('click').on('click', function (e) {
+                e.preventDefault();
+                $('#categoryTabs a').removeClass('active');
+                $(this).addClass('active');
+                currentCategory = $(this).data('category');
+                table.ajax.reload();
+            });
+
+            // Reload dropdown di form tambah/edit barang
+            const opts = activeCats.map(function (c) {
+                return `<option value="${c.key}">${c.name}</option>`;
+            }).join('');
+
+            $('select[name="category"]').each(function () {
+                const cur = $(this).val();
+                $(this).html('<option value="">-- Pilih Kategori --</option>' + opts);
+                if (cur) $(this).val(cur);
+            });
+        });
+    }
+
+    // ── Stock type toggle ──────────────────────────────────────
+    function setStockType(type) {
+        document.getElementById('stock_type').value = type;
+        const addBtn    = document.getElementById('btnAdd');
+        const reduceBtn = document.getElementById('btnReduce');
+        const submitBtn = document.getElementById('stockSubmitBtn');
+
+        if (type === 'add') {
+            addBtn.classList.add('active-add');
+            addBtn.classList.remove('active-reduce');
+            reduceBtn.classList.remove('active-add', 'active-reduce');
+            submitBtn.style.background = 'linear-gradient(135deg,#10b981,#059669)';
+        } else {
+            reduceBtn.classList.add('active-reduce');
+            reduceBtn.classList.remove('active-add');
+            addBtn.classList.remove('active-add', 'active-reduce');
+            submitBtn.style.background = 'linear-gradient(135deg,#ef4444,#dc2626)';
+        }
+    }
+
 });
 
-// ── Reload filter tabs setelah kategori berubah ────────────
-function reloadCategoryTabs() {
-    $.get("{{ route('inventory.categories') }}", function (res) {
-        if (!res.success) return;
 
-        let html = `<a href="#" class="filter-tab ${currentCategory===''?'active':''}" data-category="">
-            <i class="fas fa-th"></i> Semua
-        </a>`;
-
-        res.data.filter(c => c.is_active).forEach(c => {
-            const isActive = currentCategory === c.key ? 'active' : '';
-            html += `<a href="#" class="filter-tab ${isActive}" data-category="${c.key}">
-                <i class="${c.icon||'fas fa-box'}"></i> ${c.name}
-            </a>`;
-        });
-
-        $('#categoryTabs').html(html);
-
-        // Re-attach event listener
-        $('#categoryTabs a').off('click').on('click', function (e) {
-            e.preventDefault();
-            $('#categoryTabs a').removeClass('active');
-            $(this).addClass('active');
-            currentCategory = $(this).data('category');
-            table.ajax.reload();
-        });
-
-        // Reload dropdown kategori di form tambah/edit
-        reloadCategoryDropdowns(res.data.filter(c => c.is_active));
-    });
-}
-
-// ── Reload dropdown kategori di form barang ────────────────
-function reloadCategoryDropdowns(cats) {
-    const opts = cats.map(c =>
-        `<option value="${c.key}">${c.name}</option>`
-    ).join('');
-
-    $('select[name="category"]').each(function () {
-        const current = $(this).val();
-        $(this).html('<option value="">-- Pilih --</option>' + opts);
-        if (current) $(this).val(current);
-    });
-}
 </script>
 @endpush

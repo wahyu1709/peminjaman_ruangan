@@ -18,7 +18,7 @@
 
             <div class="modal-body" style="padding:20px;">
 
-                {{-- Form tambah kategori baru --}}
+                {{-- Form tambah kategori — hanya nama --}}
                 <div style="background:#f8fafc;border-radius:10px;padding:14px 16px;
                             border-left:3px solid #7c3aed;margin-bottom:18px;">
                     <div style="font-size:.72rem;font-weight:700;color:#7c3aed;
@@ -26,36 +26,16 @@
                         <i class="fas fa-plus-circle mr-1"></i>Tambah Kategori Baru
                     </div>
                     <form id="addCatForm">
-                        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
-                            <div style="flex:3;min-width:140px;">
+                        <div style="display:flex;gap:10px;align-items:flex-end;">
+                            <div style="flex:1;">
                                 <label class="field-label">Nama Kategori <span class="text-danger">*</span></label>
                                 <input type="text" name="name" id="newCatName" class="field-input"
                                        required placeholder="Contoh: Drone, Tenda, Kipas Angin...">
                             </div>
-                            <div style="flex:2;min-width:120px;">
-                                <label class="field-label">Ikon
-                                    <a href="https://fontawesome.com/icons" target="_blank"
-                                       style="font-size:.65rem;color:#7c3aed;">(FontAwesome)</a>
-                                </label>
-                                <div style="position:relative;">
-                                    <span id="newCatIconPreview"
-                                          style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#7c3aed;">
-                                        <i class="fas fa-box"></i>
-                                    </span>
-                                    <input type="text" name="icon" id="newCatIcon" class="field-input"
-                                           placeholder="fas fa-box" style="padding-left:32px;"
-                                           value="fas fa-box">
-                                </div>
-                            </div>
-                            <div style="flex:1;min-width:80px;">
-                                <label class="field-label">Urutan</label>
-                                <input type="number" name="sort_order" class="field-input"
-                                       value="500" min="0" placeholder="500">
-                            </div>
                             <div>
                                 <button type="submit" class="btn btn-sm text-white font-weight-bold"
                                         style="border-radius:8px;background:linear-gradient(135deg,#7c3aed,#5b21b6);
-                                               border:none;padding:8px 16px;white-space:nowrap;">
+                                               border:none;padding:8px 18px;white-space:nowrap;">
                                     <i class="fas fa-plus mr-1"></i>Tambah
                                 </button>
                             </div>
@@ -70,28 +50,21 @@
                     <span id="catCount" style="font-weight:400;color:#94a3b8;margin-left:4px;"></span>
                 </div>
 
-                <div id="catListWrap" style="max-height:360px;overflow-y:auto;">
-                    <table class="table mb-0" id="catTable" style="font-size:.875rem;">
-                        <thead style="position:sticky;top:0;background:#fff;z-index:1;">
+                <div style="max-height:380px;overflow-y:auto;">
+                    <table class="table mb-0" style="font-size:.875rem;">
+                        <thead style="position:sticky;top:0;z-index:1;">
                             <tr style="background:#f8fafc;">
-                                <th style="padding:8px 10px;font-size:.7rem;font-weight:700;color:#64748b;
+                                <th style="padding:8px 12px;font-size:.7rem;font-weight:700;color:#64748b;
                                            text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid #e2e8f0;">
-                                    Ikon</th>
-                                <th style="padding:8px 10px;font-size:.7rem;font-weight:700;color:#64748b;
-                                           text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid #e2e8f0;">
-                                    Nama</th>
-                                <th style="padding:8px 10px;font-size:.7rem;font-weight:700;color:#64748b;
+                                    Nama Kategori</th>
+                                <th style="padding:8px 12px;font-size:.7rem;font-weight:700;color:#64748b;
                                            text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid #e2e8f0;">
                                     Key</th>
-                                <th style="padding:8px 10px;font-size:.7rem;font-weight:700;color:#64748b;
-                                           text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid #e2e8f0;
-                                           text-align:center;">
-                                    Urutan</th>
-                                <th style="padding:8px 10px;font-size:.7rem;font-weight:700;color:#64748b;
+                                <th style="padding:8px 12px;font-size:.7rem;font-weight:700;color:#64748b;
                                            text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid #e2e8f0;
                                            text-align:center;">
                                     Status</th>
-                                <th style="padding:8px 10px;font-size:.7rem;font-weight:700;color:#64748b;
+                                <th style="padding:8px 12px;font-size:.7rem;font-weight:700;color:#64748b;
                                            text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid #e2e8f0;
                                            text-align:center;">
                                     Aksi</th>
@@ -99,7 +72,7 @@
                         </thead>
                         <tbody id="catTableBody">
                             <tr>
-                                <td colspan="6" style="text-align:center;padding:20px;color:#94a3b8;">
+                                <td colspan="4" style="text-align:center;padding:24px;color:#94a3b8;">
                                     <i class="fas fa-spinner fa-spin mr-2"></i>Memuat...
                                 </td>
                             </tr>
@@ -118,9 +91,9 @@
     </div>
 </div>
 
-{{-- Modal Edit Kategori (kecil, inline) --}}
+{{-- Modal Edit Kategori — hanya nama & status --}}
 <div class="modal fade" id="editCatModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered" style="max-width:440px;">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:400px;">
         <div class="modal-content border-0 shadow-lg" style="border-radius:14px;overflow:hidden;">
             <div class="modal-header text-dark border-0"
                  style="background:linear-gradient(90deg,#d97706,#fbbf24);padding:14px 20px;">
@@ -136,23 +109,6 @@
                         <label class="field-label">Nama Kategori <span class="text-danger">*</span></label>
                         <input type="text" name="name" id="editCatName" class="field-input" required>
                     </div>
-                    <div class="form-row-2">
-                        <div class="field-group">
-                            <label class="field-label">Ikon</label>
-                            <div style="position:relative;">
-                                <span id="editCatIconPreview"
-                                      style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#7c3aed;">
-                                    <i class="fas fa-box"></i>
-                                </span>
-                                <input type="text" name="icon" id="editCatIcon" class="field-input"
-                                       style="padding-left:32px;">
-                            </div>
-                        </div>
-                        <div class="field-group">
-                            <label class="field-label">Urutan</label>
-                            <input type="number" name="sort_order" id="editCatSort" class="field-input" min="0">
-                        </div>
-                    </div>
                     <div class="field-group mb-0">
                         <label class="field-label">Status</label>
                         <select name="is_active" id="editCatActive" class="field-input">
@@ -166,7 +122,8 @@
                             style="border-radius:8px;font-weight:600;border:1.5px solid #e2e8f0;"
                             data-dismiss="modal">Batal</button>
                     <button type="submit" class="btn btn-sm text-dark font-weight-bold"
-                            style="border-radius:8px;background:linear-gradient(135deg,#f59e0b,#d97706);border:none;padding:7px 16px;">
+                            style="border-radius:8px;background:linear-gradient(135deg,#f59e0b,#d97706);
+                                   border:none;padding:7px 16px;">
                         <i class="fas fa-save mr-1"></i>Simpan
                     </button>
                 </div>

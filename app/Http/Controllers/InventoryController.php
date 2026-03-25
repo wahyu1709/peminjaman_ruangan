@@ -176,7 +176,7 @@ class InventoryController extends Controller
         $cat = InventoryCategory::create([
             'key'        => $key,
             'name'       => $request->name,
-            // 'icon'       => $request->icon ?: 'fas fa-box',
+            'icon'       => $request->icon ?: 'fas fa-box',
             'sort_order' => $request->sort_order ?? 500,
             'is_active'  => true,
         ]);
@@ -188,17 +188,14 @@ class InventoryController extends Controller
     {
         $cat = InventoryCategory::findOrFail($id);
         $request->validate([
-            'name'       => 'required|string|max:100',
-            // 'icon'       => 'nullable|string|max:50',
-            'sort_order' => 'nullable|integer|min:0',
-            'is_active'  => 'required|boolean',
+            'name'      => 'required|string|max:100',
+            'is_active' => 'required|boolean',
         ]);
 
         $cat->update([
-            'name'       => $request->name,
-            // 'icon'       => $request->icon ?: 'fas fa-box',
-            'sort_order' => $request->sort_order ?? $cat->sort_order,
-            'is_active'  => $request->is_active,
+            'name'      => $request->name,
+            'is_active' => $request->is_active,
+            // icon & sort_order tidak diubah dari UI
         ]);
 
         return response()->json(['success'=>true,'message'=>'Kategori berhasil diperbarui.','data'=>$cat]);
