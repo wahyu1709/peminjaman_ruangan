@@ -376,7 +376,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div style="flex:1;">
+                            {{-- <div style="flex:1;">
                                 <div class="field-group">
                                     <label class="field-label">Foto Barang</label>
                                     <div class="img-preview-box" id="addImgBox" onclick="document.getElementById('addImgInput').click()">
@@ -388,7 +388,7 @@
                                     <input type="file" name="image" id="addImgInput" accept="image/*" style="display:none;">
                                     <span class="field-hint">JPG/PNG, maks 2MB</span>
                                 </div>
-                            </div>
+                            </div> --}}
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -436,8 +436,8 @@
                                     <div class="field-group">
                                         <label class="field-label">Kategori <span class="text-danger">*</span></label>
                                         <select name="category" id="edit_category" class="field-input" required>
-                                            @foreach($categories as $key => $label)
-                                                <option value="{{ $key }}">{{ $label }}</option>
+                                            @foreach($categories as $category)
+                                                <option value="{{ $category->key }}">{{ $category->name }}</option>
                                             @endforeach
                                         </select>
                                     </div>
@@ -581,7 +581,6 @@
 @push('scripts')
 <script>
 $(document).ready(function () {
-
     let currentCategory = '';
 
     // ── DataTable ──────────────────────────────────────────────
@@ -590,12 +589,23 @@ $(document).ready(function () {
         serverSide: true,
         ajax: {
             url: "{{ route('inventory.data') }}",
-            data: function (d) { d.category = currentCategory; }
+            data: function (d) {
+                d.category = currentCategory;
+            }
         },
         columns: [
-            { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-center' },
             {
-                data: null, name: 'name', orderable: true, searchable: true,
+                data: 'DT_RowIndex',
+                name: 'DT_RowIndex',
+                orderable: false,
+                searchable: false,
+                className: 'text-center'
+            },
+            {
+                data: null,
+                name: 'name',
+                orderable: true,
+                searchable: true,
                 render: function (d) {
                     const img = d.image
                         ? `<img src="/storage/${d.image}" class="item-img">`
@@ -610,12 +620,20 @@ $(document).ready(function () {
                 }
             },
             {
-                data: 'category_label', name: 'category',
+                data: 'category_label',
+                name: 'category',
                 render: d => `<span class="cat-badge">${d}</span>`
             },
-            { data: 'price_fmt', name: 'price_per_day', className: 'text-center', orderable: true },
             {
-                data: 'stok_info', name: 'stock', orderable: false,
+                data: 'price_fmt',
+                name: 'price_per_day',
+                className: 'text-center',
+                orderable: true
+            },
+            {
+                data: 'stok_info',
+                name: 'stock',
+                orderable: false,
                 render: function (d) {
                     return `<div class="stock-bar-wrap">
                         <div class="stock-nums">
@@ -628,8 +646,20 @@ $(document).ready(function () {
                     </div>`;
                 }
             },
-            { data: 'status_badge', name: 'is_active', orderable: false, searchable: false, className: 'text-center' },
-            { data: 'action',       name: 'action',    orderable: false, searchable: false, className: 'text-center' },
+            {
+                data: 'status_badge',
+                name: 'is_active',
+                orderable: false,
+                searchable: false,
+                className: 'text-center'
+            },
+            {
+                data: 'action',
+                name: 'action',
+                orderable: false,
+                searchable: false,
+                className: 'text-center'
+            },
         ],
         language: {
             url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json',
@@ -665,12 +695,16 @@ $(document).ready(function () {
         e.stopPropagation();
         $('#exportMenu').toggleClass('open');
     });
-    $(document).on('click', function () { $('#exportMenu').removeClass('open'); });
+
+    $(document).on('click', function () {
+        $('#exportMenu').removeClass('open');
+    });
 
     $('#doExportExcel').on('click', function (e) {
         e.preventDefault();
         window.location.href = "{{ route('inventory.export.excel') }}?category=" + (currentCategory || 'all');
     });
+
     $('#doExportPdf').on('click', function (e) {
         e.preventDefault();
         window.open("{{ route('inventory.export.pdf') }}?category=" + (currentCategory || 'all'), '_blank');
@@ -700,8 +734,11 @@ $(document).ready(function () {
     // ── Tambah Barang ──────────────────────────────────────────
     $('#addItemForm').on('submit', function (e) {
         e.preventDefault();
-        Swal.fire({ title: 'Menyimpan...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-
+        Swal.fire({
+            title: 'Menyimpan...',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+        });
         const fd = new FormData(this);
         $.ajax({
             url: "{{ route('inventory.store') }}",
@@ -711,16 +748,34 @@ $(document).ready(function () {
             contentType: false,
             success: function (res) {
                 if (res.success) {
-                    Swal.fire({ icon:'success', title:'Berhasil!', text:res.message, timer:2000, showConfirmButton:false })
-                        .then(() => { $('#addItemModal').modal('hide'); table.ajax.reload(); $('#addItemForm')[0].reset(); document.getElementById('addImgBox').innerHTML = '<div class="placeholder"><i class="fas fa-image d-block mb-1" style="font-size:1.5rem;opacity:.4;"></i>Klik untuk upload</div>'; });
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil!',
+                        text: res.message,
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(() => {
+                        $('#addItemModal').modal('hide');
+                        table.ajax.reload();
+                        $('#addItemForm')[0].reset();
+                        document.getElementById('addImgBox').innerHTML = '<div class="placeholder"><i class="fas fa-image d-block mb-1" style="font-size:1.5rem;opacity:.4;"></i>Klik untuk upload</div>';
+                    });
                 } else {
-                    Swal.fire({ icon:'error', title:'Gagal!', text: res.message });
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal!',
+                        text: res.message
+                    });
                 }
             },
             error: function (xhr) {
                 const errors = xhr.responseJSON?.errors;
                 const msg = errors ? Object.values(errors)[0][0] : (xhr.responseJSON?.message || 'Terjadi kesalahan');
-                Swal.fire({ icon:'error', title:'Error!', text: msg });
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: msg
+                });
             }
         });
     });
@@ -738,7 +793,6 @@ $(document).ready(function () {
             $('#edit_stock').val(d.stock);
             $('#edit_is_active').val(d.is_active ? '1' : '0');
             $('#edit_stock_hint').text(`Stok tersedia saat ini: ${d.stock_available}`);
-
             // Tampilkan gambar lama
             const box = document.getElementById('editImgBox');
             if (d.image) {
@@ -746,7 +800,6 @@ $(document).ready(function () {
             } else {
                 box.innerHTML = '<div class="placeholder"><i class="fas fa-image d-block mb-1" style="font-size:1.5rem;opacity:.4;"></i>Klik untuk ganti</div>';
             }
-
             $('#editItemModal').modal('show');
         });
     });
@@ -755,40 +808,57 @@ $(document).ready(function () {
     $('#editItemForm').on('submit', function (e) {
         e.preventDefault();
         const id = $('#edit_item_id').val();
-        Swal.fire({ title: 'Memperbarui...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-
+        Swal.fire({
+            title: 'Memperbarui...',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+        });
         const fd = new FormData(this);
         fd.append('_method', 'PUT');
-
         $.ajax({
             url: "{{ url('/inventory') }}/" + id,
-            method: 'POST',  // pakai POST + _method=PUT untuk file upload
+            method: 'POST',
             data: fd,
             processData: false,
             contentType: false,
             success: function (res) {
                 if (res.success) {
-                    Swal.fire({ icon:'success', title:'Berhasil!', text:res.message, timer:2000, showConfirmButton:false })
-                        .then(() => { $('#editItemModal').modal('hide'); table.ajax.reload(); });
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil!',
+                        text: res.message,
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(() => {
+                        $('#editItemModal').modal('hide');
+                        table.ajax.reload();
+                    });
                 } else {
-                    Swal.fire({ icon:'error', title:'Gagal!', text: res.message });
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal!',
+                        text: res.message
+                    });
                 }
             },
             error: function (xhr) {
                 const errors = xhr.responseJSON?.errors;
                 const msg = errors ? Object.values(errors)[0][0] : (xhr.responseJSON?.message || 'Terjadi kesalahan');
-                Swal.fire({ icon:'error', title:'Error!', text: msg });
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: msg
+                });
             }
         });
     });
 
     // ── Kelola Stok — buka modal ───────────────────────────────
     $(document).on('click', '.btn-stock', function () {
-        const id   = $(this).data('id');
+        const id = $(this).data('id');
         const name = $(this).data('name');
-        const tot  = $(this).data('total');
-        const av   = $(this).data('available');
-
+        const tot = $(this).data('total');
+        const av = $(this).data('available');
         $('#stock_item_id').val(id);
         $('#stockItemName').text(name);
         $('#stockCurrentTotal').text(tot);
@@ -796,7 +866,6 @@ $(document).ready(function () {
         $('#stockCurrentUsed').text(tot - av);
         $('#stock_amount').val('');
         setStockType('add');
-
         $('#stockModal').modal('show');
     });
 
@@ -804,36 +873,54 @@ $(document).ready(function () {
     $('#stockForm').on('submit', function (e) {
         e.preventDefault();
         const id = $('#stock_item_id').val();
-        Swal.fire({ title: 'Menyimpan...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-
+        Swal.fire({
+            title: 'Menyimpan...',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+        });
         $.ajax({
             url: "{{ url('/inventory') }}/" + id + "/stock",
             method: 'PATCH',
             data: {
                 _token: '{{ csrf_token() }}',
-                type:   $('#stock_type').val(),
+                type: $('#stock_type').val(),
                 amount: $('#stock_amount').val(),
-                note:   $('input[name="note"]').val(),
+                note: $('input[name="note"]').val(),
             },
             success: function (res) {
                 if (res.success) {
-                    Swal.fire({ icon:'success', title:'Berhasil!', text:res.message, timer:2000, showConfirmButton:false })
-                        .then(() => { $('#stockModal').modal('hide'); table.ajax.reload(); });
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil!',
+                        text: res.message,
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(() => {
+                        $('#stockModal').modal('hide');
+                        table.ajax.reload();
+                    });
                 } else {
-                    Swal.fire({ icon:'error', title:'Gagal!', text: res.message });
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal!',
+                        text: res.message
+                    });
                 }
             },
             error: function (xhr) {
-                Swal.fire({ icon:'error', title:'Error!', text: xhr.responseJSON?.message || 'Terjadi kesalahan' });
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: xhr.responseJSON?.message || 'Terjadi kesalahan'
+                });
             }
         });
     });
 
     // ── Toggle Status ──────────────────────────────────────────
     $(document).on('click', '.btn-toggle-status', function () {
-        const id   = $(this).data('id');
+        const id = $(this).data('id');
         const name = $(this).data('name');
-
         Swal.fire({
             title: 'Ubah Status?',
             html: `Ubah status aktif/nonaktif untuk <strong>${name}</strong>?`,
@@ -851,7 +938,13 @@ $(document).ready(function () {
                 data: { _token: '{{ csrf_token() }}' },
                 success: function (res) {
                     if (res.success) {
-                        Swal.fire({ icon:'success', title:'Berhasil!', text:res.message, timer:1500, showConfirmButton:false });
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil!',
+                            text: res.message,
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
                         table.ajax.reload(null, false);
                     }
                 },
@@ -862,9 +955,8 @@ $(document).ready(function () {
 
     // ── Hapus ──────────────────────────────────────────────────
     $(document).on('click', '.btn-delete-item', function () {
-        const id   = $(this).data('id');
+        const id = $(this).data('id');
         const name = $(this).data('name');
-
         Swal.fire({
             title: 'Hapus Barang?',
             html: `Yakin ingin menghapus <strong>${name}</strong>?<br><small class="text-muted">Data yang dihapus tidak bisa dikembalikan.</small>`,
@@ -882,10 +974,20 @@ $(document).ready(function () {
                 data: { _token: '{{ csrf_token() }}' },
                 success: function (res) {
                     if (res.success) {
-                        Swal.fire({ icon:'success', title:'Terhapus!', text:res.message, timer:2000, showConfirmButton:false });
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Terhapus!',
+                            text: res.message,
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
                         table.ajax.reload();
                     } else {
-                        Swal.fire({ icon:'warning', title:'Tidak Bisa Dihapus', text:res.message });
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Tidak Bisa Dihapus',
+                            text: res.message
+                        });
                     }
                 },
                 error: () => Swal.fire('Error!', 'Terjadi kesalahan', 'error')
@@ -903,46 +1005,41 @@ $(document).ready(function () {
             if (!res.success) return;
             const cats = res.data;
             $('#catCount').text('(' + cats.length + ' kategori)');
-
             if (!cats.length) {
                 $('#catTableBody').html(
                     '<tr><td colspan="4" style="text-align:center;padding:24px;color:#94a3b8;">Belum ada kategori.</td></tr>'
                 );
                 return;
             }
-
             const rows = cats.map(function (c) {
                 const activeBadge = c.is_active
                     ? '<span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:10px;font-size:.7rem;font-weight:700;">Aktif</span>'
                     : '<span style="background:#f1f5f9;color:#475569;padding:2px 8px;border-radius:10px;font-size:.7rem;font-weight:700;">Nonaktif</span>';
-
                 return `<tr style="border-bottom:1px solid #f1f5f9;">
                     <td style="padding:10px 12px;font-weight:600;color:#0f172a;">
                         <i class="fas fa-box" style="color:#7c3aed;margin-right:7px;"></i>${c.name}
                     </td>
                     <td style="padding:10px 12px;">
-                        <code style="background:#f1f5f9;padding:2px 7px;border-radius:4px;
-                                     font-size:.75rem;color:#475569;">${c.key}</code>
+                        <code style="background:#f1f5f9;padding:2px 7px;border-radius:4px;font-size:.75rem;color:#475569;">${c.key}</code>
                     </td>
                     <td style="padding:10px 12px;text-align:center;">${activeBadge}</td>
                     <td style="padding:10px 12px;text-align:center;">
                         <button class="action-btn ab-edit btn-edit-cat mr-1"
-                                data-id="${c.id}"
-                                data-name="${c.name}"
-                                data-active="${c.is_active ? 1 : 0}"
-                                title="Edit">
+                        data-id="${c.id}"
+                        data-name="${c.name}"
+                        data-active="${c.is_active ? 1 : 0}"
+                        title="Edit">
                             <i class="fas fa-edit"></i>
                         </button>
                         <button class="action-btn ab-delete btn-delete-cat"
-                                data-id="${c.id}"
-                                data-name="${c.name}"
-                                title="Hapus">
+                        data-id="${c.id}"
+                        data-name="${c.name}"
+                        title="Hapus">
                             <i class="fas fa-trash"></i>
                         </button>
                     </td>
                 </tr>`;
             }).join('');
-
             $('#catTableBody').html(rows);
         });
     }
@@ -953,26 +1050,39 @@ $(document).ready(function () {
     // ── Tambah kategori ────────────────────────────────────────
     $('#addCatForm').on('submit', function (e) {
         e.preventDefault();
-
         $.ajax({
             url: "{{ route('inventory.categories.store') }}",
             method: 'POST',
             data: { _token: '{{ csrf_token() }}', name: $('#newCatName').val() },
             success: function (res) {
                 if (res.success) {
-                    Swal.fire({ icon:'success', title:'Berhasil!', text:res.message, timer:1800, showConfirmButton:false });
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil!',
+                        text: res.message,
+                        timer: 1800,
+                        showConfirmButton: false
+                    });
                     $('#newCatName').val('').focus();
                     loadCategories();
                     reloadCategoryTabs();
                 } else {
-                    Swal.fire({ icon:'error', title:'Gagal!', text:res.message });
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal!',
+                        text: res.message
+                    });
                 }
             },
             error: function (xhr) {
                 const msg = xhr.responseJSON?.errors
                     ? Object.values(xhr.responseJSON.errors)[0][0]
                     : (xhr.responseJSON?.message || 'Terjadi kesalahan');
-                Swal.fire({ icon:'error', title:'Error!', text:msg });
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: msg
+                });
             }
         });
     });
@@ -990,68 +1100,92 @@ $(document).ready(function () {
     $('#editCatForm').on('submit', function (e) {
         e.preventDefault();
         const id = $('#editCatId').val();
-
         $.ajax({
             url: "{{ url('/inventory/categories') }}/" + id,
             method: 'PUT',
             data: {
-                _token:    '{{ csrf_token() }}',
-                name:      $('#editCatName').val(),
+                _token: '{{ csrf_token() }}',
+                name: $('#editCatName').val(),
                 is_active: $('#editCatActive').val(),
-                // icon & sort_order tidak dikirim — backend pakai default
             },
             success: function (res) {
                 if (res.success) {
-                    Swal.fire({ icon:'success', title:'Berhasil!', text:res.message, timer:1800, showConfirmButton:false });
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil!',
+                        text: res.message,
+                        timer: 1800,
+                        showConfirmButton: false
+                    });
                     $('#editCatModal').modal('hide');
                     loadCategories();
                     reloadCategoryTabs();
                 } else {
-                    Swal.fire({ icon:'error', title:'Gagal!', text:res.message });
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal!',
+                        text: res.message
+                    });
                 }
             },
             error: function (xhr) {
                 const msg = xhr.responseJSON?.errors
                     ? Object.values(xhr.responseJSON.errors)[0][0]
                     : (xhr.responseJSON?.message || 'Terjadi kesalahan');
-                Swal.fire({ icon:'error', title:'Error!', text:msg });
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: msg
+                });
             }
         });
     });
 
     // ── Hapus kategori ─────────────────────────────────────────
     $(document).on('click', '.btn-delete-cat', function () {
-        const id   = $(this).data('id');
+        const id = $(this).data('id');
         const name = $(this).data('name');
-
         Swal.fire({
             title: 'Hapus Kategori?',
-            html:  `Yakin hapus kategori <strong>${name}</strong>?<br>
-                    <small class="text-muted">Kategori yang masih memiliki barang tidak bisa dihapus.</small>`,
+            html: `Yakin hapus kategori <strong>${name}</strong>?<br>
+                <small class="text-muted">Kategori yang masih memiliki barang tidak bisa dihapus.</small>`,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#dc2626',
-            cancelButtonColor:  '#64748b',
-            confirmButtonText:  '<i class="fas fa-trash mr-1"></i> Ya, Hapus',
-            cancelButtonText:   'Batal',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: '<i class="fas fa-trash mr-1"></i> Ya, Hapus',
+            cancelButtonText: 'Batal',
         }).then(function (result) {
             if (!result.isConfirmed) return;
-
             $.ajax({
-                url:    "{{ url('/inventory/categories') }}/" + id,
+                url: "{{ url('/inventory/categories') }}/" + id,
                 method: 'DELETE',
-                data:   { _token: '{{ csrf_token() }}' },
+                data: { _token: '{{ csrf_token() }}' },
                 success: function (res) {
                     if (res.success) {
-                        Swal.fire({ icon:'success', title:'Terhapus!', text:res.message, timer:1800, showConfirmButton:false });
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Terhapus!',
+                            text: res.message,
+                            timer: 1800,
+                            showConfirmButton: false
+                        });
                         loadCategories();
                         reloadCategoryTabs();
                     } else {
-                        Swal.fire({ icon:'warning', title:'Tidak Bisa Dihapus', text:res.message });
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Tidak Bisa Dihapus',
+                            text: res.message
+                        });
                     }
                 },
                 error: function (xhr) {
-                    Swal.fire({ icon:'error', title:'Error!', text: xhr.responseJSON?.message || 'Terjadi kesalahan' });
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: xhr.responseJSON?.message || 'Terjadi kesalahan'
+                    });
                 }
             });
         });
@@ -1061,22 +1195,19 @@ $(document).ready(function () {
     function reloadCategoryTabs() {
         $.get("{{ route('inventory.categories') }}", function (res) {
             if (!res.success) return;
-
-            const activeCats = res.data.filter(function (c) { return c.is_active; });
-
+            const activeCats = res.data.filter(function (c) {
+                return c.is_active;
+            });
             let html = `<a href="#" class="filter-tab ${currentCategory === '' ? 'active' : ''}" data-category="">
                 <i class="fas fa-th"></i> Semua
             </a>`;
-
             activeCats.forEach(function (c) {
                 const isActive = currentCategory === c.key ? 'active' : '';
                 html += `<a href="#" class="filter-tab ${isActive}" data-category="${c.key}">
                     <i class="fas fa-box"></i> ${c.name}
                 </a>`;
             });
-
             $('#categoryTabs').html(html);
-
             // Re-attach event
             $('#categoryTabs a').off('click').on('click', function (e) {
                 e.preventDefault();
@@ -1085,12 +1216,10 @@ $(document).ready(function () {
                 currentCategory = $(this).data('category');
                 table.ajax.reload();
             });
-
             // Reload dropdown di form tambah/edit barang
             const opts = activeCats.map(function (c) {
                 return `<option value="${c.key}">${c.name}</option>`;
             }).join('');
-
             $('select[name="category"]').each(function () {
                 const cur = $(this).val();
                 $(this).html('<option value="">-- Pilih Kategori --</option>' + opts);
@@ -1098,29 +1227,25 @@ $(document).ready(function () {
             });
         });
     }
-
-    // ── Stock type toggle ──────────────────────────────────────
-    function setStockType(type) {
-        document.getElementById('stock_type').value = type;
-        const addBtn    = document.getElementById('btnAdd');
-        const reduceBtn = document.getElementById('btnReduce');
-        const submitBtn = document.getElementById('stockSubmitBtn');
-
-        if (type === 'add') {
-            addBtn.classList.add('active-add');
-            addBtn.classList.remove('active-reduce');
-            reduceBtn.classList.remove('active-add', 'active-reduce');
-            submitBtn.style.background = 'linear-gradient(135deg,#10b981,#059669)';
-        } else {
-            reduceBtn.classList.add('active-reduce');
-            reduceBtn.classList.remove('active-add');
-            addBtn.classList.remove('active-add', 'active-reduce');
-            submitBtn.style.background = 'linear-gradient(135deg,#ef4444,#dc2626)';
-        }
-    }
-
 });
 
-
+// ── Stock type toggle ──────────────────────────────────────
+function setStockType(type) {
+    document.getElementById('stock_type').value = type;
+    const addBtn = document.getElementById('btnAdd');
+    const reduceBtn = document.getElementById('btnReduce');
+    const submitBtn = document.getElementById('stockSubmitBtn');
+    if (type === 'add') {
+        addBtn.classList.add('active-add');
+        addBtn.classList.remove('active-reduce');
+        reduceBtn.classList.remove('active-add', 'active-reduce');
+        submitBtn.style.background = 'linear-gradient(135deg,#10b981,#059669)';
+    } else {
+        reduceBtn.classList.add('active-reduce');
+        reduceBtn.classList.remove('active-add');
+        addBtn.classList.remove('active-add', 'active-reduce');
+        submitBtn.style.background = 'linear-gradient(135deg,#ef4444,#dc2626)';
+    }
+}
 </script>
 @endpush
