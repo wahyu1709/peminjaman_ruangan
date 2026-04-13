@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 
+use function Symfony\Component\Clock\now;
+
 class DashboardController extends Controller
 {
     public function index()
@@ -39,7 +41,7 @@ class DashboardController extends Controller
                 'bookingsToday'     => Booking::whereDate('tanggal_pinjam', $today)->where('status', 'approved')->count(),
                 'bookingsPending'   => Booking::where('status', 'pending')->count(),
                 'bookingsApproved'  => Booking::where('status', 'approved')->count(),
-                'bookingsRejected'  => Booking::where('status', 'rejected')->count(),
+                'bookingsRejected'  => Booking::whereDate('tanggal_pinjam', $today)->where('status', 'rejected')->count(),
                 'bookingsCompleted' => Booking::where('status', 'completed')->count(),
                 'bookingsActive'    => Booking::where('status', 'approved')
                     ->where('tanggal_pinjam', '<=', $today)
@@ -99,17 +101,23 @@ class DashboardController extends Controller
     // =========================================================
     public function bookingPerMonth(Request $request)
     {
-        $year = $request->input('year', Carbon::now()->format('Y'));
+        $year  = $request->input('year', Carbon::now()->format('Y'));
+        $month = $request->input('month'); // ← tambah ini
 
         // ── Data bulanan utama ────────────────────────────────
-        $bookingsPerMonth = Booking::select(
+        $query = Booking::select(
                 DB::raw('MONTH(tanggal_pinjam) as month'),
                 DB::raw('COUNT(*) as total')
             )
             ->whereYear('tanggal_pinjam', $year)
-            ->where('status', '!=', 'cancelled')
-            ->groupBy('month')
-            ->pluck('total', 'month');
+            ->where('status', '!=', 'cancelled');
+
+        // ← filter bulan jika ada
+        if ($month) {
+            $query->whereMonth('tanggal_pinjam', $month);
+        }
+
+        $bookingsPerMonth = $query->groupBy('month')->pluck('total', 'month');
 
         $monthlyData = [];
         for ($i = 1; $i <= 12; $i++) {
@@ -123,12 +131,18 @@ class DashboardController extends Controller
             'year'    => $year,
         ];
 
-        // ── Tambahan: distribusi status (untuk pie chart) ─────
+        // ── Distribusi status ─────────────────────────────────
         if ($request->boolean('detail_status')) {
-            $statusCounts = Booking::select('status', DB::raw('COUNT(*) as total'))
+            $statusQuery = Booking::select('status', DB::raw('COUNT(*) as total'))
                 ->whereYear('tanggal_pinjam', $year)
-                ->groupBy('status')
-                ->pluck('total', 'status');
+                ->groupBy('status');
+
+            // ← filter bulan jika ada
+            if ($month) {
+                $statusQuery->whereMonth('tanggal_pinjam', $month);
+            }
+
+            $statusCounts = $statusQuery->pluck('total', 'status');
 
             $response['by_status'] = [
                 'approved'         => $statusCounts->get('approved', 0),
@@ -139,30 +153,31 @@ class DashboardController extends Controller
                 'cancelled'        => $statusCounts->get('cancelled', 0),
             ];
 
-            // Jumlah booking pinjam barang saja
             $response['by_status']['inventory_only'] = Booking::whereYear('tanggal_pinjam', $year)
+                ->when($month, fn($q) => $q->whereMonth('tanggal_pinjam', $month))
                 ->where('is_inventory_only', true)
                 ->count();
         }
 
-        // ── Tambahan: internal vs umum ────────────────────────
+        // ── Internal vs umum ──────────────────────────────────
         if ($request->boolean('user_type')) {
-            $userTypeCounts = Booking::select('users.jenis_pengguna', DB::raw('COUNT(*) as total'))
+            $userTypeQuery = Booking::select('users.jenis_pengguna', DB::raw('COUNT(*) as total'))
                 ->join('users', 'bookings.user_id', '=', 'users.id')
                 ->whereYear('bookings.tanggal_pinjam', $year)
                 ->where('bookings.status', '!=', 'cancelled')
-                ->groupBy('users.jenis_pengguna')
-                ->pluck('total', 'jenis_pengguna');
+                ->groupBy('users.jenis_pengguna');
 
-            // Kelompokkan: semua selain 'umum' = internal
+            // ← filter bulan jika ada
+            if ($month) {
+                $userTypeQuery->whereMonth('bookings.tanggal_pinjam', $month);
+            }
+
+            $userTypeCounts = $userTypeQuery->pluck('total', 'jenis_pengguna');
+
             $internal = 0;
             $umum     = 0;
             foreach ($userTypeCounts as $type => $count) {
-                if ($type === 'umum') {
-                    $umum += $count;
-                } else {
-                    $internal += $count;
-                }
+                $type === 'umum' ? $umum += $count : $internal += $count;
             }
 
             $response['by_user_type'] = [
@@ -323,30 +338,67 @@ class DashboardController extends Controller
     // =========================================================
     public function revenuePerMonth(Request $request)
     {
-        $year = $request->input('year', Carbon::now()->format('Y'));
+        $year  = $request->input('year', Carbon::now()->format('Y'));
+        $month = $request->input('month'); // ← tambah ini
 
-        $revenuePerMonth = Booking::select(
+        $query = Booking::select(
                 DB::raw('MONTH(tanggal_pinjam) as month'),
                 DB::raw('SUM(total_amount) as revenue')
             )
             ->whereYear('tanggal_pinjam', $year)
-            ->where('status', 'approved')          // hanya yang sudah disetujui
-            ->where('total_amount', '>', 0)
-            ->groupBy('month')
-            ->pluck('revenue', 'month');
+            ->whereIn('status', ['approved', 'completed', 'payment_uploaded'])
+            ->where('total_amount', '>', 0);
 
+        // ← filter bulan jika ada
+        if ($month) {
+            $query->whereMonth('tanggal_pinjam', $month);
+        }
+
+        $revenuePerMonth = $query->groupBy('month')->pluck('revenue', 'month');
+
+        // Jika filter bulan aktif, kembalikan data per hari bukan per bulan
+        if ($month) {
+            // Ambil data per hari dalam bulan tersebut
+            $daysInMonth = Carbon::createFromDate($year, $month, 1)->daysInMonth;
+            $dailyRevenue = Booking::select(
+                    DB::raw('DAY(tanggal_pinjam) as day'),
+                    DB::raw('SUM(total_amount) as revenue')
+                )
+                ->whereYear('tanggal_pinjam', $year)
+                ->whereMonth('tanggal_pinjam', $month)
+                ->whereIn('status', ['approved', 'completed', 'payment_uploaded'])
+                ->where('total_amount', '>', 0)
+                ->groupBy('day')
+                ->pluck('revenue', 'day');
+
+            $data   = [];
+            $labels = [];
+            for ($d = 1; $d <= $daysInMonth; $d++) {
+                $data[]   = (float) ($dailyRevenue->get($d, 0));
+                $labels[] = $d;
+            }
+
+            return response()->json([
+                'success' => true,
+                'labels'  => $labels,
+                'data'    => $data,
+                'total'   => array_sum($data),
+                'year'    => $year,
+                'month'   => $month,
+            ]);
+        }
+
+        // Jika tidak ada filter bulan, kembalikan data per bulan seperti biasa
         $monthlyRevenue = [];
         for ($i = 1; $i <= 12; $i++) {
             $monthlyRevenue[$i] = (float) ($revenuePerMonth->get($i, 0));
         }
 
-        $total = array_sum($monthlyRevenue);
-
         return response()->json([
             'success' => true,
             'labels'  => ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],
             'data'    => array_values($monthlyRevenue),
-            'total'   => $total,
+            'total'   => array_sum($monthlyRevenue),
             'year'    => $year,
         ]);
     }
@@ -396,77 +448,124 @@ class DashboardController extends Controller
     // =========================================================
     public function exportFullPdf(Request $request)
     {
-        if (Auth::user()->role !== 'admin') {
+        if(Auth::user()->role !== 'admin'){
             abort(403);
         }
-    
-        $year  = $request->input('year',  now()->format('Y'));
+
+        $year = $request->input('year', now()->format('Y'));
         $month = $request->input('month');
-        $days  = $request->input('days',  30);
-    
-        // ── Kumpulkan semua data ────────────────────────────────
-        $monthlyData  = $this->getMonthlyData($year);
+
+        // Monthly data
+        $monthlyData = $this->getMonthlyData($year, $month);
+
+        // Top rooms
         $topRoomsData = $this->getTopRoomsData($year, $month);
-        $timeData     = $this->getTimeAnalysisData($year, $month);
-    
+
+        // Time analysis
+        $timeData = $this->getTimeAnalysisData($year, $month);
+
         // Status distribution
-        $statusCounts = Booking::select('status', DB::raw('COUNT(*) as total'))
-            ->whereYear('tanggal_pinjam', $year)
-            ->groupBy('status')
-            ->pluck('total', 'status');
-    
+        $statusQuery = Booking::select('status', DB::raw('COUNT(*) as total'))
+                        ->whereYear('tanggal_pinjam', $year)
+                        ->groupBy('status');
+        
+        if ($month) {
+            $statusQuery->whereMonth('tanggal_pinjam', $month);
+        }
+
+        $statusCounts = $statusQuery->pluck('total', 'status');
+
         $statusData = [
-            'approved'         => $statusCounts->get('approved', 0),
-            'pending'          => $statusCounts->get('pending', 0),
-            'payment_uploaded' => $statusCounts->get('payment_uploaded', 0),
-            'rejected'         => $statusCounts->get('rejected', 0),
-            'completed'        => $statusCounts->get('completed', 0),
-            'cancelled'        => $statusCounts->get('cancelled', 0),
-            'inventory_only'   => Booking::whereYear('tanggal_pinjam', $year)
-                                    ->where('is_inventory_only', true)->count(),
+            'approved' => $statusCounts->get('approved',0),
+            'pending' => $statusCounts->get('pending',0),
+            'payment_uploaded' => $statusCounts->get('payment_uploaded',0),
+            'rejected' => $statusCounts->get('rejected',0),
+            'completed' => $statusCounts->get('completed',0),
+            'cancelled' => $statusCounts->get('cancelled',0),
         ];
-    
-        // Internal vs umum
-        $userTypeCounts = Booking::select('users.jenis_pengguna', DB::raw('COUNT(*) as total'))
-            ->join('users', 'bookings.user_id', '=', 'users.id')
-            ->whereYear('bookings.tanggal_pinjam', $year)
-            ->where('bookings.status', '!=', 'cancelled')
-            ->groupBy('users.jenis_pengguna')
-            ->pluck('total', 'jenis_pengguna');
-    
+
+        // Internal VS Umum
+        $userTypeQuery = Booking::select('users.jenis_pengguna', DB::raw('COUNT(*) as total'))
+        ->join('users', 'bookings.user_id', '=', 'users.id')
+        ->whereYear('bookings.tanggal_pinjam', $year)
+        ->where('bookings.status', '!=', 'cancelled')
+        ->groupBy('users.jenis_pengguna');
+
+        if ($month){
+            $userTypeQuery->whereMonth('bookings.tanggal_pinjam', $month);
+        }
+
+        $userTypeCounts = $userTypeQuery->pluck('total', 'jenis_pengguna');
+
         $internal = 0;
-        $umum     = 0;
+        $umum = 0;
         foreach ($userTypeCounts as $type => $count) {
             $type === 'umum' ? $umum += $count : $internal += $count;
         }
         $userTypeData = ['internal' => $internal, 'umum' => $umum];
-    
+
         // Revenue
-        $revenueRaw = Booking::select(
+        $revenueQuery = Booking::select(
                 DB::raw('MONTH(tanggal_pinjam) as month'),
                 DB::raw('SUM(total_amount) as revenue')
             )
             ->whereYear('tanggal_pinjam', $year)
-            ->where('status', 'approved')
+            ->whereIn('status', ['approved', 'completed', 'payment_uploaded'])
             ->where('total_amount', '>', 0)
-            ->groupBy('month')
-            ->pluck('revenue', 'month');
-    
-        $revenueMonthly = [];
-        for ($i = 1; $i <= 12; $i++) {
-            $revenueMonthly[$i] = (float) ($revenueRaw->get($i, 0));
+            ->groupBy('month');
+
+        if ($month) {
+            $revenueQuery->whereMonth('tanggal_pinjam', $month);
         }
-        $revenueData = [
-            'labels' => ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],
-            'data'   => array_values($revenueMonthly),
-            'total'  => array_sum($revenueMonthly),
-            'year'   => $year,
-        ];
-    
+
+        $revenueRaw = $revenueQuery->pluck('revenue', 'month');
+
+        if ($month) {
+            // Filter bulan aktif → data per hari
+            $daysInMonth = Carbon::createFromDate($year, $month, 1)->daysInMonth;
+            $dailyRevenue = Booking::select(
+                    DB::raw('DAY(tanggal_pinjam) as day'),
+                    DB::raw('SUM(total_amount) as revenue')
+                )
+                ->whereYear('tanggal_pinjam', $year)
+                ->whereMonth('tanggal_pinjam', $month)
+                ->whereIn('status', ['approved', 'completed', 'payment_uploaded'])
+                ->where('total_amount', '>', 0)
+                ->groupBy('day')
+                ->pluck('revenue', 'day');
+
+            $revData = [];
+            $revLabels = [];
+            for ($d = 1; $d <= $daysInMonth; $d++) {
+                $revData[] = (float) ($dailyRevenue->get($d, 0));
+                $revLabels[] = $d . ' ' . Carbon::createFromDate($year, $month, $d)->isoFormat('MMM');
+            }
+
+            $revenueData = [
+                'labels' => $revLabels,
+                'data' => $revData,
+                'total' => array_sum($revData),
+                'year' => $year,
+                'month' => $month,
+            ];
+        } else {
+            // Tidak ada filter bulan → data per bulan
+            $monthlyRevenue = [];
+            for ($i = 1; $i <= 12; $i++) {
+                $monthlyRevenue[$i] = (float) ($revenueRaw->get($i, 0));
+            }
+            $revenueData = [
+                'labels' => ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'],
+                'data' => array_values($monthlyRevenue),
+                'total' => array_sum($monthlyRevenue),
+                'year' => $year,
+            ];
+        }
+
         // Top inventory
         $invQuery = DB::table('inventory_bookings')
             ->join('inventories', 'inventory_bookings.inventory_id', '=', 'inventories.id')
-            ->join('bookings',    'inventory_bookings.booking_id',   '=', 'bookings.id')
+            ->join('bookings', 'inventory_bookings.booking_id', '=', 'bookings.id')
             ->select(
                 'inventories.name',
                 DB::raw('SUM(inventory_bookings.quantity) as total_qty'),
@@ -475,26 +574,25 @@ class DashboardController extends Controller
             ->whereYear('bookings.tanggal_pinjam', $year)
             ->where('bookings.status', '!=', 'cancelled')
             ->groupBy('inventories.id', 'inventories.name')
-            ->orderByDesc('total_qty')
             ->limit(10);
-    
+        
         if ($month) {
             $invQuery->whereMonth('bookings.tanggal_pinjam', $month);
         }
-    
-        $invResults  = $invQuery->get();
+
+        $invResults = $invQuery->get();
         $inventoryData = [
-            'labels'   => $invResults->pluck('name')->toArray(),
-            'data'     => $invResults->pluck('total_qty')->map(fn($v) => (int)$v)->toArray(),
-            'bookings' => $invResults->pluck('total_booking')->map(fn($v) => (int)$v)->toArray(),
+            'labels' => $invResults->pluck('name')->toArray(),
+            'data' => $invResults->pluck('total_qty')->map(fn($v) => (int)$v)->toArray(),
+            'bookings' => $invResults->pluck('total_booking')->map(fn($v) => (int)$v)->toArray()
         ];
-    
-        // ── Periode label ───────────────────────────────────────
+
+        // Periode label
         $period = $month
             ? Carbon::createFromDate($year, $month, 1)->isoFormat('MMMM YYYY')
             : 'Tahun ' . $year;
-    
-        // ── Generate PDF ────────────────────────────────────────
+
+        // Generate PDF
         $pdf = Pdf::loadView('admin.statistics.pdf.full', [
             'monthly_data'   => $monthlyData,
             'top_rooms_data' => $topRoomsData,
@@ -504,7 +602,7 @@ class DashboardController extends Controller
             'revenue_data'   => $revenueData,
             'inventory_data' => $inventoryData,
             'period'         => $period,
-            'generated_at'   => now()->isoFormat('D MMMM YYYY, HH:mm'),
+            'generated_at'   => Carbon::now()->isoFormat('D MMMM YYYY, HH:mm'),
         ])
         ->setPaper('a4', 'portrait')
         ->setOption('margin-top',    8)
@@ -513,25 +611,29 @@ class DashboardController extends Controller
         ->setOption('margin-right',  0)
         ->setOption('isHtml5ParserEnabled', true)
         ->setOption('isRemoteEnabled', false);
-    
+
+
         $filename = 'statistik_peminjaman_' . $year . ($month ? '_'.$month : '') . '.pdf';
-    
         return $pdf->download($filename);
     }
 
     // =========================================================
     // PRIVATE HELPERS
     // =========================================================
-    private function getMonthlyData($year): array
+    private function getMonthlyData($year, $month = null): array
     {
-        $raw = Booking::select(
+        $query = Booking::select(
                 DB::raw('MONTH(tanggal_pinjam) as month'),
                 DB::raw('COUNT(*) as total')
             )
             ->whereYear('tanggal_pinjam', $year)
-            ->where('status', '!=', 'cancelled')
-            ->groupBy('month')
-            ->pluck('total', 'month');
+            ->where('status', '!=', 'cancelled');
+        
+        if ($month) {
+            $query->whereMonth('tanggal_pinjam', $month);
+        }
+
+        $raw = $query->groupBy('month')->pluck('total', 'month');
 
         $data = [];
         for ($i = 1; $i <= 12; $i++) {
@@ -539,9 +641,10 @@ class DashboardController extends Controller
         }
 
         return [
-            'labels' => ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],
-            'data'   => array_values($data),
-            'year'   => $year,
+            'labels' => ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'],
+            'data' => array_values($data),
+            'year' => $year,
+            'month' => $month,
         ];
     }
 

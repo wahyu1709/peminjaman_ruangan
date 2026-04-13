@@ -249,9 +249,6 @@
                 @endif
             </div>
         </div>
-        <div style="font-size:.8rem;color:#94a3b8;">
-            {{ now()->isoFormat('dddd, D MMMM YYYY') }}
-        </div>
     </div>
 
     {{-- ── Alert: Upload Bukti Pembayaran ─────────────────────── --}}
@@ -357,7 +354,7 @@
                 <i class="fas fa-calendar-day me-2"></i>
                 Peminjaman Hari Ini
             </h6>
-            <span class="date-badge">{{ $today->isoFormat('D MMMM YYYY') }}</span>
+            <span class="date-badge">{{ now()->isoFormat('dddd, D MMMM YYYY') }}</span>
         </div>
 
         <div class="card-body p-0">

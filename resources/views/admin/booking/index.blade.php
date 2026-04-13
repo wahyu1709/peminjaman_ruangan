@@ -379,7 +379,7 @@
                                     <div class="room-name-s">{{ $booking->room->nama_ruangan }}</div>
                                 @else
                                     <span style="color:#94a3b8;font-size:.85rem;">
-                                        <i class="fas fa-box me-1"></i>Barang Saja
+                                        <i class="fas fa-box me-1"></i> Barang Saja
                                     </span>
                                 @endif
                             </td>
@@ -582,101 +582,136 @@
         @if($booking->total_amount > 0 && $booking->user_id === auth()->id())
         <div class="modal fade" id="uploadModal{{ $booking->id }}" tabindex="-1">
             <div class="modal-dialog modal-lg">
-                <div class="modal-content border-0 shadow">
-                    <div class="modal-header modal-header-green text-white">
-                        <h5 class="modal-title fw-bold">
-                            <i class="fas fa-upload me-2"></i>Upload Bukti Pembayaran
+                <div class="modal-content border-0 shadow-lg" style="border-radius:14px;overflow:hidden;">
+                    <div class="modal-header modal-header-green text-white border-0" style="padding:14px 20px;">
+                        <h5 class="modal-title font-weight-bold" style="font-size:.95rem;">
+                            <i class="fas fa-upload mr-2"></i>Upload Bukti Pembayaran
                         </h5>
-                        <button type="button" class="close text-white" data-dismiss="modal">
-                            <span>&times;</span>
-                        </button>
+                        <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
                     </div>
                     <form action="{{ route('booking.upload.proof', $booking->id) }}"
-                          method="POST" enctype="multipart/form-data">
+                        method="POST" enctype="multipart/form-data">
                         @csrf
-                        <div class="modal-body">
+                        <div class="modal-body" style="padding:20px;">
 
                             {{-- Detail Peminjaman --}}
                             <div class="modal-detail-box">
-                                <div style="font-size:.78rem;font-weight:700;color:#4361ee;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">
-                                    <i class="fas fa-info-circle me-1"></i>Detail Peminjaman
+                                <div style="font-size:.72rem;font-weight:700;color:#4361ee;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">
+                                    <i class="fas fa-info-circle mr-1"></i>Detail Peminjaman
                                 </div>
-                                <div class="detail-row">
-                                    <span class="detail-label">Ruangan</span>
-                                    <span class="detail-value">{{ $roomLabel }}</span>
+                                <div class="row" style="font-size:.875rem;">
+
+                                    {{-- Ruangan (hanya tampil jika ada) --}}
+                                    @if($booking->room)
+                                    <div class="col-6 mb-2">
+                                        <div class="dl">Ruangan</div>
+                                        <div class="dv">
+                                            {{ $booking->room->kode_ruangan }} — {{ $booking->room->nama_ruangan }}
+                                        </div>
+                                    </div>
+                                    @endif
+
+                                    <div class="col-6 mb-2">
+                                        <div class="dl">Tanggal</div>
+                                        <div class="dv">{{ \Carbon\Carbon::parse($booking->tanggal_pinjam)->isoFormat('D MMMM YYYY') }}</div>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <div class="dl">Waktu</div>
+                                        <div class="dv">
+                                            {{ \Carbon\Carbon::parse($booking->waktu_mulai)->format('H:i') }} –
+                                            {{ \Carbon\Carbon::parse($booking->waktu_selesai)->format('H:i') }}
+                                        </div>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <div class="dl">Total Bayar</div>
+                                        <div class="dv" style="color:#059669;font-size:1rem;font-weight:700;">
+                                            Rp {{ number_format($booking->total_amount, 0, ',', '.') }}
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="detail-row">
-                                    <span class="detail-label">Tanggal</span>
-                                    <span class="detail-value">{{ \Carbon\Carbon::parse($booking->tanggal_pinjam)->isoFormat('D MMMM YYYY') }}</span>
+
+                                {{-- Detail Barang (jika ada) --}}
+                                @if($booking->inventories->count() > 0)
+                                <div style="margin-top:10px;padding-top:10px;border-top:1px dashed #e2e8f0;">
+                                    <div style="font-size:.72rem;font-weight:700;color:#4361ee;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">
+                                        <i class="fas fa-boxes mr-1"></i>Barang Dipinjam
+                                    </div>
+                                    @foreach($booking->inventories as $inv)
+                                    <div class="d-flex justify-content-between align-items-center"
+                                        style="padding:5px 0;border-bottom:1px solid #f1f5f9;font-size:.85rem;">
+                                        <div>
+                                            <i class="fas fa-box" style="color:#4361ee;font-size:.75rem;margin-right:5px;"></i>
+                                            {{ $inv->name }}
+                                            <span class="badge badge-light border ml-1" style="font-size:.72rem;">
+                                                x{{ $inv->pivot->quantity }}
+                                            </span>
+                                        </div>
+                                        <div style="color:#059669;font-weight:600;font-size:.82rem;">
+                                            Rp {{ number_format($inv->pivot->price_at_booking * $inv->pivot->quantity, 0, ',', '.') }}
+                                        </div>
+                                    </div>
+                                    @endforeach
                                 </div>
-                                <div class="detail-row">
-                                    <span class="detail-label">Waktu</span>
-                                    <span class="detail-value">
-                                        {{ \Carbon\Carbon::parse($booking->waktu_mulai)->format('H:i') }} –
-                                        {{ \Carbon\Carbon::parse($booking->waktu_selesai)->format('H:i') }}
-                                    </span>
-                                </div>
-                                <div class="detail-row">
-                                    <span class="detail-label">Total Bayar</span>
-                                    <span class="detail-value" style="font-weight:700;color:#059669;font-size:1rem;">
-                                        Rp {{ number_format($booking->total_amount, 0, ',', '.') }}
-                                    </span>
-                                </div>
+                                @endif
+
                             </div>
 
                             {{-- Info Rekening --}}
                             <div class="bank-info-box">
-                                <div class="bank-title"><i class="fas fa-university me-2"></i>Informasi Transfer</div>
-                                <p><strong>Bank:</strong> BNI Cabang Kampus UI Depok</p>
-                                <p><strong>No. Rekening:</strong> 1273000535</p>
-                                <p><strong>Atas Nama:</strong> Universitas Indonesia FIK Non Biaya Pendidikan</p>
+                                <div class="bank-title"><i class="fas fa-university mr-1"></i>Informasi Transfer</div>
+                                <p class="mb-1"><strong>Bank:</strong> BNI Cabang Kampus UI Depok</p>
+                                <p class="mb-1"><strong>No. Rekening:</strong> 1273000535</p>
+                                <p class="mb-0"><strong>Atas Nama:</strong> Universitas Indonesia FIK Non Biaya Pendidikan</p>
                             </div>
 
                             {{-- Bukti lama --}}
                             @if($booking->bukti_pembayaran)
-                            <div class="modal-detail-box" style="border-left-color:#94a3b8;">
-                                <div style="font-size:.78rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">
-                                    <i class="fas fa-history me-1"></i>Bukti Sebelumnya
+                            <div class="modal-detail-box" style="border-left-color:#94a3b8;margin-bottom:14px;">
+                                <div style="font-size:.72rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">
+                                    <i class="fas fa-history mr-1"></i>Bukti Sebelumnya
                                 </div>
                                 @if(pathinfo($booking->bukti_pembayaran, PATHINFO_EXTENSION) == 'pdf')
                                     <a href="{{ Storage::url($booking->bukti_pembayaran) }}" target="_blank"
-                                       class="action-btn ab-cancel">
+                                    class="action-btn ab-cancel">
                                         <i class="fas fa-file-pdf"></i> Lihat PDF Lama
                                     </a>
                                 @else
                                     <img src="{{ Storage::url($booking->bukti_pembayaran) }}"
-                                         class="img-thumbnail" style="max-height:140px;">
+                                        class="img-thumbnail" style="max-height:140px;">
                                 @endif
                             </div>
                             @endif
 
                             {{-- Upload field --}}
                             <div class="form-group">
-                                <label class="font-weight-bold mb-2">
+                                <label class="font-weight-bold mb-2" style="font-size:.82rem;">
                                     Upload Bukti Transfer <span class="text-danger">*</span>
                                 </label>
                                 <input type="file"
-                                       name="bukti_pembayaran"
-                                       class="form-control-file @error('bukti_pembayaran') is-invalid @enderror"
-                                       accept="image/*,.pdf"
-                                       id="fileInput{{ $booking->id }}"
-                                       required>
+                                    name="bukti_pembayaran"
+                                    class="form-control-file @error('bukti_pembayaran') is-invalid @enderror"
+                                    accept="image/*,.pdf"
+                                    id="fileInput{{ $booking->id }}"
+                                    required>
                                 @error('bukti_pembayaran')
                                     <small class="text-danger">{{ $message }}</small>
                                 @enderror
                                 <small class="text-muted d-block mt-1">Format: JPG, PNG, PDF · Maks 5MB</small>
                             </div>
 
-                            <div id="imagePreview{{ $booking->id }}" class="mt-2" style="display:none;">
+                            <div id="imagePreview{{ $booking->id }}" style="display:none;" class="mt-2">
                                 <p class="font-weight-bold mb-1" style="font-size:.85rem;">Preview:</p>
                                 <img id="preview{{ $booking->id }}" src=""
-                                     class="img-fluid rounded" style="max-height:260px;border:1px solid #e2e8f0;">
+                                    class="img-fluid rounded" style="max-height:260px;border:1px solid #e2e8f0;">
                             </div>
                         </div>
-                        <div class="modal-footer">
-                            <button type="button" class="action-btn ab-cancel" data-dismiss="modal">Batal</button>
-                            <button type="submit" class="action-btn ab-approve">
-                                <i class="fas fa-check me-1"></i>Upload Bukti
+                        <div class="modal-footer border-0" style="padding:12px 20px;background:#f8fafc;">
+                            <button type="button" class="btn btn-sm btn-light"
+                                    style="border-radius:8px;font-weight:600;border:1.5px solid #e2e8f0;"
+                                    data-dismiss="modal">Batal</button>
+                            <button type="submit" class="btn btn-sm text-white font-weight-bold"
+                                    style="border-radius:8px;background:linear-gradient(135deg,#10b981,#059669);border:none;padding:7px 18px;">
+                                <i class="fas fa-check mr-1"></i>Upload Bukti
                             </button>
                         </div>
                     </form>
@@ -706,42 +741,102 @@
         @if($booking->bukti_pembayaran && pathinfo($booking->bukti_pembayaran, PATHINFO_EXTENSION) !== 'pdf')
         <div class="modal fade" id="proofModal{{ $booking->id }}" tabindex="-1">
             <div class="modal-dialog modal-lg">
-                <div class="modal-content border-0 shadow">
-                    <div class="modal-header modal-header-green text-white">
-                        <h5 class="modal-title fw-bold">
-                            <i class="fas fa-image me-2"></i>Bukti Pembayaran — {{ $booking->user->name }}
+                <div class="modal-content border-0 shadow-lg" style="border-radius:14px;overflow:hidden;">
+                    <div class="modal-header modal-header-green text-white border-0" style="padding:14px 20px;">
+                        <h5 class="modal-title font-weight-bold" style="font-size:.95rem;">
+                            <i class="fas fa-image mr-2"></i>Bukti Pembayaran — {{ $booking->user->name }}
                         </h5>
                         <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
                     </div>
-                    <div class="modal-body text-center">
+                    <div class="modal-body text-center" style="padding:20px;">
                         <img src="{{ Storage::url($booking->bukti_pembayaran) }}"
-                             alt="Bukti Pembayaran" class="img-fluid rounded" style="max-height:400px;">
+                            alt="Bukti Pembayaran" class="img-fluid rounded" style="max-height:400px;">
+
                         <div class="modal-detail-box mt-3 text-left">
-                            <div class="detail-row">
-                                <span class="detail-label">Ruangan</span>
-                                <span class="detail-value">{{ $roomLabel }}</span>
+                            <div class="row" style="font-size:.875rem;">
+
+                                {{-- Ruangan (hanya jika ada) --}}
+                                @if($booking->room)
+                                <div class="col-6 mb-2">
+                                    <div class="dl">Ruangan</div>
+                                    <div class="dv">
+                                        {{ $booking->room->kode_ruangan }} — {{ $booking->room->nama_ruangan }}
+                                    </div>
+                                </div>
+                                @endif
+
+                                <div class="col-6 mb-2">
+                                    <div class="dl">Tanggal</div>
+                                    <div class="dv">{{ \Carbon\Carbon::parse($booking->tanggal_pinjam)->isoFormat('D MMMM YYYY') }}</div>
+                                </div>
+                                <div class="col-6 mb-2">
+                                    <div class="dl">Waktu</div>
+                                    <div class="dv">
+                                        {{ \Carbon\Carbon::parse($booking->waktu_mulai)->format('H:i') }} –
+                                        {{ \Carbon\Carbon::parse($booking->waktu_selesai)->format('H:i') }}
+                                    </div>
+                                </div>
+                                <div class="col-6 mb-2">
+                                    <div class="dl">Total</div>
+                                    <div class="dv" style="color:#059669;font-weight:700;">
+                                        Rp {{ number_format($booking->total_amount, 0, ',', '.') }}
+                                    </div>
+                                </div>
                             </div>
-                            <div class="detail-row">
-                                <span class="detail-label">Total</span>
-                                <span class="detail-value fw-bold">Rp {{ number_format($booking->total_amount, 0, ',', '.') }}</span>
+
+                            {{-- Detail Barang (jika ada) --}}
+                            @if($booking->inventories->count() > 0)
+                            <div style="margin-top:10px;padding-top:10px;border-top:1px dashed #e2e8f0;">
+                                <div style="font-size:.72rem;font-weight:700;color:#4361ee;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">
+                                    <i class="fas fa-boxes mr-1"></i>Barang Dipinjam
+                                </div>
+                                @foreach($booking->inventories as $inv)
+                                <div class="d-flex justify-content-between align-items-center"
+                                    style="padding:5px 0;border-bottom:1px solid #f1f5f9;font-size:.85rem;">
+                                    <div>
+                                        <i class="fas fa-box" style="color:#4361ee;font-size:.75rem;margin-right:5px;"></i>
+                                        {{ $inv->name }}
+                                        <span class="badge badge-light border ml-1" style="font-size:.72rem;">
+                                            x{{ $inv->pivot->quantity }}
+                                        </span>
+                                    </div>
+                                    <div style="color:#059669;font-weight:600;font-size:.82rem;">
+                                        Rp {{ number_format($inv->pivot->price_at_booking * $inv->pivot->quantity, 0, ',', '.') }}
+                                    </div>
+                                </div>
+                                @endforeach
                             </div>
-                            <div class="detail-row">
-                                <span class="detail-label">Status</span>
-                                <span class="detail-value">
-                                    @php
-                                        $spMap = ['payment_uploaded'=>['sb-verif','Menunggu Verifikasi'],'approved'=>['sb-approved','Terverifikasi']];
-                                        [$sc,$sl] = $spMap[$booking->status] ?? ['sb-completed', ucfirst($booking->status)];
-                                    @endphp
-                                    <span class="status-badge {{ $sc }}">{{ $sl }}</span>
-                                </span>
+                            @endif
+
+                            {{-- Status --}}
+                            <div style="margin-top:10px;padding-top:8px;border-top:1px solid #f1f5f9;">
+                                <div class="row" style="font-size:.875rem;">
+                                    <div class="col-12">
+                                        <div class="dl">Status</div>
+                                        <div class="dv mt-1">
+                                            @php
+                                                $spMap = [
+                                                    'payment_uploaded' => ['sb-verif',    'Menunggu Verifikasi'],
+                                                    'approved'         => ['sb-approved', 'Terverifikasi'],
+                                                ];
+                                                [$sc, $sl] = $spMap[$booking->status] ?? ['sb-completed', ucfirst($booking->status)];
+                                            @endphp
+                                            <span class="status-badge {{ $sc }}">{{ $sl }}</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
+
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="action-btn ab-cancel" data-dismiss="modal">Tutup</button>
+                    <div class="modal-footer border-0" style="padding:12px 20px;background:#f8fafc;">
+                        <button type="button" class="btn btn-sm btn-light"
+                                style="border-radius:8px;font-weight:600;border:1.5px solid #e2e8f0;"
+                                data-dismiss="modal">Tutup</button>
                         <a href="{{ Storage::url($booking->bukti_pembayaran) }}" target="_blank"
-                           class="action-btn ab-extend">
-                            <i class="fas fa-external-link-alt me-1"></i>Buka Tab Baru
+                        class="btn btn-sm text-white font-weight-bold"
+                        style="border-radius:8px;background:linear-gradient(135deg,#4361ee,#3a0ca3);border:none;padding:7px 18px;">
+                            <i class="fas fa-external-link-alt mr-1"></i>Buka Tab Baru
                         </a>
                     </div>
                 </div>

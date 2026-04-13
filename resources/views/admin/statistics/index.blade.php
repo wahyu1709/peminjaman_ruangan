@@ -618,8 +618,9 @@ document.addEventListener('DOMContentLoaded', function () {
             mode === 'daily' ? '' : 'none';
 
         if (mode === 'monthly') {
-            // Monthly: ikut global year (bulan diabaikan — tampilkan 12 bar)
-            api(`{{ route('api.statistics.booking.per.month') }}?year=${G.year}&detail_status=1&user_type=1`)
+            // ← pakai buildUrl agar month ikut terkirim
+            api(buildUrl(`{{ route('api.statistics.booking.per.month') }}`,
+                { detail_status: 1, user_type: 1 }))
                 .then(d => {
                     if (!d.success) return;
 
@@ -672,8 +673,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function loadStatus() {
+        // ← pakai buildUrl agar month ikut terkirim
         api(buildUrl(`{{ route('api.statistics.booking.per.month') }}`,
-            { detail_status: 1 }))
+            { detail_status: 1, user_type: 1 }))
             .then(d => {
                 const by = d.by_status || {};
                 const labels = Object.keys(by).map(k => STATUS_LABELS[k] || k);
@@ -779,10 +781,13 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function loadRevenue() {
+        // ← pakai buildUrl agar month ikut terkirim
         api(buildUrl(`{{ route('api.statistics.revenue') }}`))
             .then(d => {
                 if (!d.success) return;
-                const total = d.total || d.data?.reduce((a,b)=>a+b,0) || 0;
+
+                // Hitung total dari data yang dikembalikan
+                const total = d.total || d.data?.reduce((a,b) => a+b, 0) || 0;
 
                 document.getElementById('kpiRevenue').textContent = fmtRupiah(total);
                 document.getElementById('totalRevenueLabel').textContent =

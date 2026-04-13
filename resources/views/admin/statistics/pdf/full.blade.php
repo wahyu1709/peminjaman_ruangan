@@ -367,7 +367,7 @@ tr:nth-child(even) td { background: #f8fafc; }
             <p class="note">Tingkat persetujuan: {{ $approvalRate }}% (disetujui + selesai)</p>
         </div>
 
-        {{-- Internal vs Umum --}}
+        {{-- Jenis Pengguna --}}
         <div>
             <div class="section-title">3. Jenis Pengguna</div>
             @php
@@ -398,16 +398,6 @@ tr:nth-child(even) td { background: #f8fafc; }
                         <td class="td-r td-n">{{ $umum }}</td>
                         <td class="td-r">{{ $utTotal > 0 ? round($umum/$utTotal*100, 1) : 0 }}%</td>
                     </tr>
-                    <tr>
-                        <td>
-                            <span class="dot" style="background:#8b5cf6;"></span>
-                            Pinjam Barang Saja
-                        </td>
-                        <td class="td-r td-n">{{ $inventoryOnly }}</td>
-                        <td class="td-r">
-                            {{ $totalAll > 0 ? round($inventoryOnly/$totalAll*100, 1) : 0 }}%
-                        </td>
-                    </tr>
                 </tbody>
                 <tfoot>
                     <tr style="background:#f1f5f9;">
@@ -417,7 +407,7 @@ tr:nth-child(even) td { background: #f8fafc; }
                     </tr>
                 </tfoot>
             </table>
-            <p class="note">*Pinjam barang saja dihitung dari total peminjaman</p>
+            <p class="note">*Internal = Mahasiswa, Dosen, dan Staf FIK UI</p>
         </div>
 
     </div>

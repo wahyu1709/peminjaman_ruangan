@@ -2,15 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use Carbon\Carbon;
-use App\Models\Room;
+use App\Events\BookingCreated;
 use App\Models\Booking;
 use App\Models\Inventory;
+use App\Models\Room;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Yajra\DataTables\Facades\DataTables;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
+use Yajra\DataTables\Facades\DataTables;
 
 class BookingController extends Controller
 {
@@ -54,95 +55,149 @@ class BookingController extends Controller
      */
     public function store(Request $request)
     {
-        // Validation
         $request->validate([
-            'room_id' => 'nullable|exists:rooms,id',
-            'tanggal_pinjam' => 'required|date|after_or_equal:today',
-            'waktu_mulai' => 'required|date_format:H:i',
-            'waktu_selesai' => 'required|date_format:H:i|after:waktu_mulai',
-            'keperluan' => 'required|string|max:500',
-            'role_unit' => 'nullable|string|max:255',
-            'selected_inventories' => 'nullable|string',
+            'room_id'               => 'nullable|exists:rooms,id',
+            'tanggal_pinjam'        => 'required|date|after_or_equal:today',
+            'waktu_mulai'           => 'required|date_format:H:i',
+            'waktu_selesai'         => 'required|date_format:H:i|after:waktu_mulai',
+            'keperluan'             => 'required|string|max:500',
+            'role_unit'             => 'nullable|string|max:255',
+            'selected_inventories'  => 'nullable|string',
+            'is_urgent'             => 'nullable|boolean', // ← tambah
         ], [
-            'room_id.required' => 'Ruangan wajib dipilih (atau centang "Pinjam Barang")',
+            'room_id.required'          => 'Ruangan wajib dipilih',
             'tanggal_pinjam.after_or_equal' => 'Tanggal tidak boleh kemarin',
-            'waktu_selesai.after' => 'Waktu selesai harus setelah waktu mulai',
-            'keperluan.required' => 'Keperluan wajib diisi',
+            'waktu_selesai.after'       => 'Waktu selesai harus setelah waktu mulai',
+            'keperluan.required'        => 'Keperluan wajib diisi',
         ]);
 
-        $user = Auth::user();
-        $room = $request->filled('room_id') && $request->room_id 
-            ? Room::findOrFail($request->room_id) 
+        $user    = Auth::user();
+        $isAdmin = $user->role === 'admin';
+        $isUrgent = $request->boolean('is_urgent', false);
+
+        $room = $request->filled('room_id') && $request->room_id
+            ? Room::findOrFail($request->room_id)
             : null;
-        
-        $tanggal = Carbon::parse($request->tanggal_pinjam);
+
+        $tanggal      = Carbon::parse($request->tanggal_pinjam);
+        $waktuMulai   = Carbon::parse($request->tanggal_pinjam . ' ' . $request->waktu_mulai);
+        $waktuSelesai = Carbon::parse($request->tanggal_pinjam . ' ' . $request->waktu_selesai);
+
         $selectedInventories = json_decode($request->selected_inventories ?? '[]', true) ?? [];
 
-        // === VALIDASI: Minimal 1 item (ruangan atau barang) ===
+        // === VALIDASI KHUSUS NON-ADMIN =========================================
+        if (!$isAdmin) {
+
+            // 1. Jam operasional 07:00 - 22:00
+            $jamBuka   = Carbon::parse($request->tanggal_pinjam . ' 07:00');
+            $jamTutup  = Carbon::parse($request->tanggal_pinjam . ' 22:00');
+
+            if ($waktuMulai->lt($jamBuka) || $waktuSelesai->gt($jamTutup)) {
+                return back()->withErrors([
+                    'waktu_mulai' => 'Jam peminjaman hanya diperbolehkan antara 07:00 - 22:00.'
+                ])->withInput();
+            }
+
+            // 2. Minimum durasi 30 menit
+            $durasiMenit = $waktuMulai->diffInMinutes($waktuSelesai);
+            if ($durasiMenit < 30) {
+                return back()->withErrors([
+                    'waktu_selesai' => 'Durasi peminjaman minimal 30 menit.'
+                ])->withInput();
+            }
+
+            // 3. Maksimal booking H+1 (hanya hari ini dan besok)
+            $maksimalTanggal = Carbon::today()->addDay();
+            if ($tanggal->gt($maksimalTanggal)) {
+                return back()->withErrors([
+                    'tanggal_pinjam' => 'Peminjaman hanya bisa dilakukan untuk hari ini atau besok.'
+                ])->withInput();
+            }
+
+            // 4. H-1 jam sebelum waktu mulai (kecuali booking urgent)
+            if (!$isUrgent) {
+                $batasPesan = $waktuMulai->copy()->subHour();
+                if (now()->gt($batasPesan)) {
+                    return back()->withErrors([
+                        'waktu_mulai' => 'Peminjaman harus dilakukan minimal 1 jam sebelum waktu mulai. ' .
+                                        'Jika mendesak, gunakan fitur "Booking Urgent".'
+                    ])->withInput();
+                }
+            }
+
+            // 5. Maksimal 8 jam per hari
+            $durasiJam = $waktuMulai->diffInHours($waktuSelesai, true);
+            if ($durasiJam > 8) {
+                return back()->withErrors([
+                    'waktu_selesai' => 'Durasi peminjaman maksimal 8 jam per hari. ' .
+                                    'Jika lebih dari 8 jam, hubungi admin.'
+                ])->withInput();
+            }
+        }
+        // ========================================================================
+
+        // === VALIDASI UMUM (semua user) =========================================
+
         if (!$room && empty($selectedInventories)) {
             return back()->withErrors([
-                'room_id' => 'Anda harus memilih minimal 1 ruangan atau 1 barang untuk melakukan peminjaman.'
+                'room_id' => 'Anda harus memilih minimal 1 ruangan atau 1 barang.'
             ])->withInput();
         }
 
-        // === VALIDASI: Konflik jadwal ruangan (jika ada ruangan) ===
         if ($room && $this->hasScheduleConflict($request)) {
             return back()->withErrors([
                 'waktu_mulai' => 'Jadwal bentrok! Ruangan sudah dibooking pada waktu tersebut.'
             ])->withInput();
         }
 
-        // === VALIDASI: Stok barang ===
         $inventoryErrors = $this->validateInventoryStock($selectedInventories);
         if (!empty($inventoryErrors)) {
             return back()->withErrors($inventoryErrors)->withInput();
         }
 
-        // === VALIDASI: Ruangan aktif (jika ada ruangan) ===
         if ($room && !$room->is_active) {
             return back()->withErrors(['room_id' => 'Ruangan tidak tersedia'])->withInput();
         }
 
-        // === VALIDASI: Eksternal tidak boleh pinjam ruangan gratis ===
         if ($room && $user->jenis_pengguna === 'umum' && $room->harga_sewa_per_hari == 0) {
             return back()->withErrors([
-                'room_id' => 'Ruangan gratis hanya untuk Civitas Akademika FIK UI. Pilih ruangan berbayar.'
+                'room_id' => 'Ruangan gratis hanya untuk Civitas Akademika FIK UI.'
             ])->withInput();
         }
 
-        // === HITUNG TOTAL HARGA ===
+        // === HITUNG TOTAL HARGA ================================================
         $totalAmount = $this->calculateTotalAmount($room, $tanggal, $user, $selectedInventories);
 
-        // === SIMPAN BOOKING ===
+        // === SIMPAN BOOKING =====================================================
         $booking = Booking::create([
-            'user_id' => $user->id,
-            'room_id' => $request->room_id ?? null,
+            'user_id'           => $user->id,
+            'room_id'           => $request->room_id ?? null,
             'is_inventory_only' => !$request->room_id,
-            'tanggal_pinjam' => $request->tanggal_pinjam,
-            'waktu_mulai' => $request->waktu_mulai,
-            'waktu_selesai' => $request->waktu_selesai,
-            'keperluan' => $request->keperluan,
-            'role_unit' => $request->role_unit,
-            'total_amount' => $totalAmount,
-            'status' => 'pending',
+            'tanggal_pinjam'    => $request->tanggal_pinjam,
+            'waktu_mulai'       => $request->waktu_mulai,
+            'waktu_selesai'     => $request->waktu_selesai,
+            'keperluan'         => $request->keperluan,
+            'role_unit'         => $request->role_unit,
+            'total_amount'      => $totalAmount,
+            'status'            => 'pending',
+            'is_urgent'         => $isUrgent, // ← tambah kolom ini
         ]);
 
-        // === SIMPAN DATA BARANG ===
+        // === SIMPAN DATA BARANG =================================================
         if (!empty($selectedInventories)) {
             foreach ($selectedInventories as $item) {
                 $inventory = Inventory::findOrFail($item['id']);
-                
                 $booking->inventories()->attach($inventory->id, [
-                    'quantity' => $item['quantity'],
+                    'quantity'         => $item['quantity'],
                     'price_at_booking' => $item['price'],
                 ]);
-                
-                // Kurangi stok tersedia
                 $inventory->decrement('stock_available', $item['quantity']);
             }
         }
 
-        // === GENERATE INVOICE ===
+        event(new BookingCreated($booking));
+
+        // === GENERATE INVOICE ===================================================
         if ($totalAmount > 0) {
             $this->generateInvoice($booking);
             return redirect()->route('dashboard')
@@ -195,8 +250,10 @@ class BookingController extends Controller
 
         $booking = Booking::findOrFail($id);
 
-        if ($booking->status !== 'pending') {
-            return back()->withErrors(['status' => 'Hanya booking pending yang bisa ditolak']);
+        if (!in_array($booking->status, ['pending', 'payment_uploaded'])) {
+            return back()->withErrors([
+                'status' => 'Booking ini tidak bisa ditolak (status: ' . $booking->status . ')'
+            ]);
         }
 
         // Kembalikan stok barang

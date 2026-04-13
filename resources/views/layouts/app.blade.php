@@ -25,42 +25,37 @@
                     <ul class="navbar-nav ml-auto">
 
                         <!-- Nav Item - Alerts -->
-                        @if(auth()->check() && (auth()->user()->role == 'admin'))
-                            @php
-                                $pendingOver1Hour = \App\Models\Booking::where('status', 'pending')
-                                    ->where('created_at', '<', \Carbon\Carbon::now()->subHour())
-                                    ->count();
-                            @endphp
-
-                            <li class="nav-item dropdown no-arrow mx-1">
-                                <a class="nav-link dropdown-toggle" href="#" id="alertsDropdown" role="button" data-toggle="dropdown">
-                                    <i class="fas fa-bell fa-fw"></i>
-                                    @if($pendingOver1Hour > 0)
-                                        <span class="badge badge-danger badge-counter">{{ $pendingOver1Hour }}</span>
-                                    @endif
-                                </a>
-                                <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in">
-                                    <h6 class="dropdown-header bg-danger text-white">
-                                        Peringatan Booking
-                                    </h6>
-                                    @if($pendingOver1Hour > 0)
-                                        <a class="dropdown-item d-flex align-items-center" href="{{ route('booking') }}">
-                                            <div class="mr-3">
-                                                <div class="icon-circle bg-warning">
-                                                    <i class="fas fa-exclamation-triangle text-white"></i>
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <span class="font-weight-bold">{{ $pendingOver1Hour }} booking menunggu persetujuan lebih dari 1 jam</span>
-                                            </div>
-                                        </a>
-                                    @else
-                                        <a class="dropdown-item text-center text-gray-500 small">Tidak ada peringatan</a>
-                                    @endif
-                                    <div class="dropdown-divider"></div>
-                                    <a class="dropdown-item text-center small text-gray-500" href="{{ route('booking') }}">Lihat Semua Booking</a>
+                        @if(auth()->check() && auth()->user()->role == 'admin')
+                        <li class="nav-item dropdown no-arrow mx-1" id="notifDropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-toggle="dropdown">
+                                <i class="fas fa-bell fa-fw"></i>
+                                <span class="badge badge-danger badge-counter d-none" id="notifBadge">0</span>
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-right shadow" style="width:340px;max-height:400px;overflow-y:auto;">
+                                <div class="d-flex align-items-center justify-content-between px-3 py-2"
+                                    style="background:linear-gradient(135deg,#4361ee,#3a0ca3);">
+                                    <span class="text-white font-weight-bold" style="font-size:.85rem;">
+                                        <i class="fas fa-bell mr-1"></i> Notifikasi Booking
+                                    </span>
+                                    <button onclick="clearNotifications()" 
+                                            style="background:rgba(255,255,255,.2);border:none;color:#fff;
+                                                border-radius:6px;padding:2px 8px;font-size:.75rem;cursor:pointer;">
+                                        Hapus Semua
+                                    </button>
                                 </div>
-                            </li>
+                                <div id="notifList">
+                                    <div class="text-center py-4 text-muted" id="notifEmpty">
+                                        <i class="fas fa-bell-slash d-block mb-2" style="font-size:1.5rem;opacity:.3;"></i>
+                                        <small>Belum ada notifikasi</small>
+                                    </div>
+                                </div>
+                                <div class="dropdown-divider m-0"></div>
+                                <a class="dropdown-item text-center small text-primary py-2 font-weight-bold" 
+                                href="{{ route('booking') }}">
+                                    <i class="fas fa-list mr-1"></i> Lihat Semua Booking
+                                </a>
+                            </div>
+                        </li>
                         @endif
 
                         <div class="topbar-divider d-none d-sm-block"></div>

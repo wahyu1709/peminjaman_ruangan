@@ -228,6 +228,27 @@
                 </div>
             </div>
 
+            {{-- ── Booking Urgent (hanya non-admin) ────────────────────── --}}
+            @if(auth()->user()->role !== 'admin')
+            <div id="urgent-section" class="mb-3" style="display:none;">
+                <div class="alert alert-warning" style="border-radius:10px;border-left:4px solid #f59e0b;">
+                    <div class="form-check mb-0">
+                        <input type="checkbox" name="is_urgent" id="is_urgent"
+                            class="form-check-input" value="1"
+                            {{ old('is_urgent') ? 'checked' : '' }}>
+                        <label class="form-check-label font-weight-bold" for="is_urgent">
+                            <i class="fas fa-bolt mr-1" style="color:#f59e0b;"></i>
+                            Booking Urgent (Mendesak)
+                        </label>
+                    </div>
+                    <small class="text-muted d-block mt-1">
+                        Gunakan jika peminjaman kurang dari 1 jam dari sekarang.
+                        Booking urgent akan diprioritaskan oleh admin.
+                    </small>
+                </div>
+            </div>
+            @endif
+
             {{-- Checkbox Pinjam Barang --}}
             <div class="form-check mb-3">
                 <input type="checkbox" id="pinjam_barang" class="form-check-input">
@@ -358,6 +379,12 @@ document.addEventListener('DOMContentLoaded', function () {
     const roleSelect          = document.getElementById('role_unit_select');
     const roleOther           = document.getElementById('role_unit_other');
     const roleFinal           = document.getElementById('role_unit_final');
+
+    // ─── Logika Booking Urgent ────────────────────────────────────
+    const waktuMulaiInput  = document.querySelector('input[name="waktu_mulai"]');
+    const waktuSelesaiInput= document.querySelector('input[name="waktu_selesai"]');
+    const urgentSection    = document.getElementById('urgent-section');
+    const isAdmin          = @json(auth()->user()->role === 'admin');
 
     // ─── State: quantity per item ──────────────────────────────────────────────
     // key = inventory id (string), value = integer quantity
@@ -624,10 +651,117 @@ document.addEventListener('DOMContentLoaded', function () {
         selectedInvInput.value = JSON.stringify(selectedInventories);
     }
 
-    // ─── Event Listeners ──────────────────────────────────────────────────────
+    function cekUrgent() {
+        if (isAdmin || !urgentSection) return;
 
+        const tanggal    = dateInput?.value;
+        const waktuMulai = waktuMulaiInput?.value;
+
+        if (!tanggal || !waktuMulai) {
+            urgentSection.style.display = 'none';
+            return;
+        }
+
+        const waktuMulaiDate = new Date(tanggal + 'T' + waktuMulai + ':00');
+        const sekarang       = new Date();
+        const selisihMenit   = (waktuMulaiDate - sekarang) / 60000;
+
+        // Tampilkan opsi urgent jika waktu mulai < 60 menit dari sekarang
+        if (selisihMenit > 0 && selisihMenit <= 60) {
+            urgentSection.style.display = 'block';
+        } else {
+            urgentSection.style.display = 'none';
+            document.getElementById('is_urgent').checked = false;
+        }
+    }
+
+    // ─── Validasi tambahan di submit ──────────────────────────────
+    function validasiWaktuOperasional() {
+        if (isAdmin) return true;
+
+        const tanggal     = dateInput?.value;
+        const waktuMulai  = waktuMulaiInput?.value;
+        const waktuSelesai= waktuSelesaiInput?.value;
+
+        if (!tanggal || !waktuMulai || !waktuSelesai) return true;
+
+        // Jam operasional
+        const jamBuka  = '07:00';
+        const jamTutup = '22:00';
+        if (waktuMulai < jamBuka || waktuSelesai > jamTutup) {
+            Swal.fire({
+                title: 'Peringatan',
+                text: 'Jam peminjaman hanya diperbolehkan antara 07:00 - 22:00.',
+                icon: 'warning',
+                confirmButtonText: 'OK'
+            });
+            return false;
+        }
+
+        // Minimum 30 menit
+        const [mH, mM] = waktuMulai.split(':').map(Number);
+        const [sH, sM] = waktuSelesai.split(':').map(Number);
+        const durasiMenit = (sH * 60 + sM) - (mH * 60 + mM);
+        if (durasiMenit < 30) {
+            Swal.fire({
+                title: 'Peringatan',
+                text: 'Durasi peminjaman minimal 30 menit.',
+                icon: 'warning',
+                confirmButtonText: 'OK'
+            });
+            return false;
+        }
+
+        // Maksimal 8 jam
+        if (durasiMenit > 480) {
+            Swal.fire({
+                title: 'Peringatan',
+                text: 'Durasi peminjaman maksimal 8 jam per hari.',
+                icon: 'warning',
+                confirmButtonText: 'OK'
+            });
+            return false;
+        }
+
+        // H+1
+        const today    = new Date(); today.setHours(0,0,0,0);
+        const besok    = new Date(today); besok.setDate(besok.getDate() + 1);
+        const tgl      = new Date(tanggal + 'T00:00:00');
+        if (tgl > besok) {
+            Swal.fire({
+                title: 'Peringatan',
+                text: 'Peminjaman hanya bisa dilakukan untuk hari ini atau besok.',
+                icon: 'warning',
+                confirmButtonText: 'OK'
+            });
+            return false;
+        }
+
+        // H-1 jam
+        const isUrgent = document.getElementById('is_urgent')?.checked;
+        if (!isUrgent) {
+            const waktuMulaiDate = new Date(tanggal + 'T' + waktuMulai + ':00');
+            const sekarang       = new Date();
+            const selisihMenit   = (waktuMulaiDate - sekarang) / 60000;
+            if (selisihMenit < 60) {
+                Swal.fire({
+                    title: 'Peringatan',
+                    html: 'Peminjaman harus dilakukan minimal 1 jam sebelum waktu mulai.<br><br>Jika mendesak, centang "Booking Urgent".',
+                    icon: 'warning',
+                    confirmButtonText: 'OK'
+                });
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    // ─── Event Listeners ──────────────────────────────────────────────────────
     roomSelect?.addEventListener('change', hitungHarga);
     dateInput?.addEventListener('change', hitungHarga);
+    waktuMulaiInput?.addEventListener('change', cekUrgent);
+    dateInput?.addEventListener('change', cekUrgent);
 
     // Hitung saat halaman pertama load
     setTimeout(hitungHarga, 300);
@@ -640,19 +774,31 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (tanpaRuangan && inventories.length === 0) {
             e.preventDefault();
-            alert(
-                '⚠️ Anda memilih "Tanpa Ruangan", tetapi tidak memilih barang yang ingin dipinjam.\n\n' +
-                'Silakan pilih minimal 1 barang atau pilih ruangan.'
-            );
+            Swal.fire({
+                title: 'Peringatan',
+                html: 'Anda memilih "Tanpa Ruangan", tetapi tidak memilih barang yang ingin dipinjam.<br><br>Silakan pilih minimal 1 barang atau pilih ruangan.',
+                icon: 'warning',
+                confirmButtonText: 'OK'
+            });
             return false;
         }
 
         if (tanpaRuangan && !pinjamBarangCb.checked) {
             e.preventDefault();
-            alert('⚠️ Anda harus memilih minimal 1 ruangan atau mengaktifkan peminjaman barang.');
+            Swal.fire({
+                title: 'Peringatan',
+                text: 'Anda harus memilih minimal 1 ruangan atau mengaktifkan peminjaman barang.',
+                icon: 'warning',
+                confirmButtonText: 'OK'
+            });
             return false;
         }
-    });
+
+        if (!validasiWaktuOperasional()) {
+            e.preventDefault();
+            return false;
+        }
+    }, true);
 
 });
 </script>
